@@ -148,6 +148,41 @@ All storage backends implement `StorageDriverInterface`, making the system easil
 - Storage backend integration tests
 - Authentication and authorization tests
 
+## Troubleshooting
+
+### SQLite Database Path Error
+
+If you encounter the error `Database file at path does not exist` during deployment or migration:
+
+**Problem**: Laravel cannot find the SQLite database file, especially on production servers.
+
+**Solution**:
+1. **Use absolute paths in production `.env`**:
+   ```env
+   DB_CONNECTION=sqlite
+   DB_DATABASE=/full/path/to/your/project/database/database.sqlite
+   ```
+
+2. **Create the database file**:
+   ```bash
+   touch database/database.sqlite
+   chmod 664 database/database.sqlite
+   ```
+
+3. **Clear configuration cache**:
+   ```bash
+   php artisan config:clear
+   php artisan migrate
+   ```
+
+4. **Set proper permissions**:
+   ```bash
+   chown www-data:www-data database/database.sqlite
+   chmod 664 database/database.sqlite
+   ```
+
+**Note**: Relative paths in `DB_DATABASE` may not work correctly on all server environments. Always use absolute paths for production deployments.
+
 ## Project Structure
 ```
 app/
