@@ -116,9 +116,13 @@ class BlobService
             // Store the blob data using storage manager
             $storageResult = $this->storageManager->store($blobId, $content, $mimeType, $actualBackendType);
 
-            // Update the storage path (empty for database storage)
-            $storagePath = $actualBackendType === 'database' ? '' : $storageResult['storage_path'];
+            // Update both backend type and storage path based on actual result
+            // (StorageManager may fallback to database if the preferred backend fails)
+            $actualBackendUsed = $storageResult['backend_type'];
+            $storagePath = $actualBackendUsed === 'database' ? '' : $storageResult['storage_path'];
+            
             $blob->update([
+                'storage_backend' => $actualBackendUsed,
                 'storage_path' => $storagePath,
             ]);
 

@@ -12,7 +12,7 @@ use InvalidArgumentException;
 
 /**
  * Storage Manager
- * 
+ *
  * Manages storage drivers and provides a unified interface for blob storage operations.
  * Handles driver selection, configuration, and fallback mechanisms.
  */
@@ -79,16 +79,22 @@ class StorageManager
     public function getBestAvailableDriver(): StorageDriverInterface
     {
         $configuredBackend = env('STORAGE_BACKEND', 'database');
-        
+
         // Try to use the configured backend first
         if (isset($this->drivers[$configuredBackend])) {
             $driver = $this->drivers[$configuredBackend];
             if ($driver->isConfigured()) {
+                \Log::info("Storage: Using configured backend '{$configuredBackend}'");
                 return $driver;
+            } else {
+                \Log::warning("Storage: Configured backend '{$configuredBackend}' is not properly configured, falling back to database");
             }
+        } else {
+            \Log::warning("Storage: Configured backend '{$configuredBackend}' is not available, falling back to database");
         }
-        
+
         // Fallback to database driver
+        \Log::info("Storage: Using database backend as fallback");
         return $this->drivers['database'];
     }
 
@@ -98,31 +104,37 @@ class StorageManager
     public function store(string $blobId, string $data, string $mimeType, ?string $backendType = null): array
     {
         $driver = $backendType ? $this->getDriver($backendType) : $this->getBestAvailableDriver();
-        
+
         try {
             $storagePath = $driver->store($blobId, $data, $mimeType);
-            
+            \Log::info("Storage: Successfully stored blob '{$blobId}' using {$driver->getBackendType()} backend");
+
             return [
                 'backend_type' => $driver->getBackendType(),
                 'storage_path' => $storagePath,
             ];
         } catch (Exception $e) {
+            \Log::error("Storage: Failed to store blob '{$blobId}' using {$driver->getBackendType()} backend: {$e->getMessage()}");
+
             // If specified backend fails and it's not the database backend, try database as fallback
             if ($backendType && $backendType !== 'database') {
                 try {
+                    \Log::info("Storage: Attempting fallback to database backend for blob '{$blobId}'");
                     $fallbackDriver = $this->getDriver('database');
                     $storagePath = $fallbackDriver->store($blobId, $data, $mimeType);
-                    
+                    \Log::info("Storage: Successfully stored blob '{$blobId}' using database fallback");
+
                     return [
                         'backend_type' => $fallbackDriver->getBackendType(),
                         'storage_path' => $storagePath,
                     ];
                 } catch (Exception $fallbackException) {
+                    \Log::error("Storage: Database fallback also failed for blob '{$blobId}': {$fallbackException->getMessage()}");
                     // If fallback also fails, throw the original exception
                     throw $e;
                 }
             }
-            
+
             throw $e;
         }
     }
@@ -133,12 +145,12 @@ class StorageManager
     public function retrieve(string $backendType, string $storagePath, string $blobId = null): string
     {
         $driver = $this->getDriver($backendType);
-        
+
         // For database storage, we need to pass the blob_id
         if ($backendType === 'database' && $driver instanceof \App\Services\Storage\DatabaseStorageDriver) {
             return $driver->retrieve($storagePath, $blobId);
         }
-        
+
         return $driver->retrieve($storagePath);
     }
 
@@ -195,22 +207,22 @@ class StorageManager
     public function getConfiguredBackends(): array
     {
         $configured = ['database']; // Database is always available
-        
+
         // Check if local storage is configured
         if (env('LOCAL_STORAGE_PATH')) {
             $configured[] = 'local';
         }
-        
+
         // Check if S3 is configured
         if (env('S3_ENDPOINT') && env('S3_BUCKET') && env('S3_ACCESS_KEY') && env('S3_SECRET_KEY')) {
             $configured[] = 's3';
         }
-        
+
         // Check if FTP is configured
         if (env('FTP_HOST') && env('FTP_USERNAME') && env('FTP_PASSWORD')) {
             $configured[] = 'ftp';
         }
-        
+
         return $configured;
     }
 
@@ -221,29 +233,29 @@ class StorageManager
     {
         try {
             $driver = $this->getDriver($backendType);
-            
+
             // Test with a small dummy file
             $testData = 'test-blob-data';
-            $testBlobId = 'test-' . uniqid();
-            
+            $testBlobId = 'test-' . uniqid('', true);
+
             // Store test data
             $storagePath = $driver->store($testBlobId, $testData, 'text/plain');
-            
+
             // Retrieve test data
             $retrievedData = $driver->retrieve($storagePath);
-            
+
             // Verify data integrity
             $dataMatches = $retrievedData === $testData;
-            
+
             // Check if exists
             $exists = $driver->exists($storagePath);
-            
+
             // Get size
             $size = $driver->getSize($storagePath);
-            
+
             // Clean up test data
             $driver->delete($storagePath);
-            
+
             return [
                 'success' => true,
                 'configured' => true,

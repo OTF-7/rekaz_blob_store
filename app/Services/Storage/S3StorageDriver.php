@@ -52,20 +52,29 @@ class S3StorageDriver implements StorageDriverInterface
         $timestamp = gmdate('Ymd\THis\Z');
         $date = gmdate('Ymd');
         
+        // Add required headers for signature
+        $headers['X-Amz-Date'] = $timestamp;
+        
         // Create canonical request
         $canonicalHeaders = '';
         $signedHeaders = '';
-        ksort($headers);
         
+        // Sort headers by lowercase key
+        $sortedHeaders = [];
         foreach ($headers as $key => $value) {
-            $canonicalHeaders .= strtolower($key) . ':' . trim($value) . "\n";
-            $signedHeaders .= strtolower($key) . ';';
+            $sortedHeaders[strtolower($key)] = trim($value);
+        }
+        ksort($sortedHeaders);
+        
+        foreach ($sortedHeaders as $key => $value) {
+            $canonicalHeaders .= $key . ':' . $value . "\n";
+            $signedHeaders .= $key . ';';
         }
         
         $signedHeaders = rtrim($signedHeaders, ';');
         
-        // URL encode the URI path for canonical request
-        $canonicalUri = implode('/', array_map('rawurlencode', explode('/', $uri)));
+        // Use the URI as-is for MinIO compatibility
+        $canonicalUri = $uri;
         
         $canonicalRequest = $method . "\n" .
                            $canonicalUri . "\n" .
@@ -136,16 +145,24 @@ class S3StorageDriver implements StorageDriverInterface
                 $host .= ':' . $parsedUrl['port'];
             }
             
-            $headers = [
-                'Content-Type' => $mimeType,
-                'Content-Length' => (string) strlen($data),
+            // Use minimal headers for signature (only Host) - same as successful bucket listing
+            $signatureHeaders = [
                 'Host' => $host,
             ];
             
-            $authHeaders = $this->generateSignature('PUT', '/' . $this->config['bucket'] . '/' . $objectKey, $headers, $data);
-            $headers = array_merge($headers, $authHeaders);
+            // Use empty payload for signature calculation (MinIO compatibility)
+            $authHeaders = $this->generateSignature('PUT', '/' . $this->config['bucket'] . '/' . $objectKey, $signatureHeaders, '');
             
-            $response = Http::withHeaders($headers)->put($url, $data);
+            // Add all headers for the actual request
+            $requestHeaders = [
+                'Content-Type' => $mimeType,
+                'Content-Length' => (string) strlen($data),
+                'Host' => $host,
+                'Authorization' => $authHeaders['Authorization'],
+                'X-Amz-Date' => $authHeaders['X-Amz-Date'],
+            ];
+            
+            $response = Http::withHeaders($requestHeaders)->withBody($data, $mimeType)->put($url);
             
             if (!$response->successful()) {
                 throw new Exception("S3 PUT request failed: {$response->status()} - {$response->body()}");
