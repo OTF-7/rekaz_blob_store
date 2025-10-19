@@ -215,6 +215,152 @@ All storage backends implement `StorageDriverInterface`, making the system easil
 - Storage backend integration tests
 - Authentication and authorization tests
 
+## Production Deployment
+
+### Storage Backend Configuration in Production
+
+If your storage backend always defaults to database in production despite configuring a different backend in `.env`, follow these troubleshooting steps:
+
+#### 1. Diagnose Storage Configuration
+
+Use the built-in diagnostic command to check your storage configuration:
+
+```bash
+# Check all storage backends
+php artisan storage:diagnose
+
+# Check specific backend (e.g., ftp)
+php artisan storage:diagnose --backend=ftp
+```
+
+This command will show:
+- Current environment variables
+- Configuration cache status
+- Backend availability and connectivity
+- Missing environment variables
+
+#### 2. Clear Laravel Configuration Cache
+
+**Most Common Issue**: Laravel caches configuration in production, ignoring `.env` changes.
+
+```bash
+# Clear all caches
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+
+# Rebuild optimized configuration
+php artisan config:cache
+```
+
+#### 3. Verify Environment Variables
+
+Ensure your production `.env` file contains the correct storage backend configuration:
+
+```env
+# For FTP backend
+STORAGE_BACKEND=ftp
+FTP_HOST=your-ftp-server.com
+FTP_USERNAME=your-username
+FTP_PASSWORD=your-password
+FTP_PORT=21
+FTP_ROOT=/path/to/storage
+FTP_PASSIVE=true
+FTP_SSL=false
+
+# For S3 backend
+STORAGE_BACKEND=s3
+S3_ENDPOINT=https://s3.amazonaws.com
+S3_BUCKET=your-bucket-name
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_REGION=us-east-1
+
+# For local file storage
+STORAGE_BACKEND=local
+LOCAL_STORAGE_PATH=storage/app/blobs
+```
+
+#### 4. Check File Permissions
+
+Ensure your web server can read the `.env` file:
+
+```bash
+# Set proper permissions
+chmod 644 .env
+chown www-data:www-data .env  # or your web server user
+```
+
+#### 5. Test Backend Connectivity
+
+After clearing caches, test your storage backend:
+
+```bash
+# Test specific backend
+php artisan storage:diagnose --backend=your_backend
+
+# Or test via tinker
+php artisan tinker
+>>> $manager = app('App\Services\StorageManager');
+>>> $manager->getCurrentBackend();
+>>> $manager->testDriver('ftp'); // or your backend
+```
+
+#### 6. Common Production Issues
+
+**Issue**: Backend falls back to database despite configuration
+**Cause**: Backend configuration is invalid or connectivity fails
+**Solution**: 
+- Check network connectivity to FTP/S3 servers
+- Verify credentials are correct
+- Ensure firewall allows outbound connections
+- Check server logs for connection errors
+
+**Issue**: Environment variables not loading
+**Cause**: `.env` file not readable or cached config outdated
+**Solution**:
+- Verify `.env` file exists and has correct permissions
+- Clear configuration cache: `php artisan config:clear`
+- Restart web server/PHP-FPM
+
+**Issue**: Storage backend works locally but not in production
+**Cause**: Different network environment or missing extensions
+**Solution**:
+- Install required PHP extensions (curl, ftp, etc.)
+- Check production server network access
+- Verify production credentials differ from local
+
+#### 7. Deployment Checklist
+
+```bash
+# 1. Upload files and install dependencies
+composer install --no-dev --optimize-autoloader
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with production values
+
+# 3. Generate application key
+php artisan key:generate
+
+# 4. Run migrations
+php artisan migrate --force
+
+# 5. Clear and cache configuration
+php artisan config:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 6. Set permissions
+chmod -R 755 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+
+# 7. Test storage configuration
+php artisan storage:diagnose
+```
+
 ## Troubleshooting
 
 ### SQLite Database Path Error

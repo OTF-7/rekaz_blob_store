@@ -762,8 +762,9 @@
             "script": {
                 "type": "text/javascript",
                 "exec": [
-                    "if (!pm.environment.get('base_url')) {",
-                    "pm.environment.set('base_url', 'http://rekaz.test');",
+                    "// Only set base_url if it's not already defined in environment or collection",
+                    "if (!pm.environment.get('base_url') && !pm.collectionVariables.get('base_url')) {",
+                    "    pm.environment.set('base_url', 'http://rekaz.test');",
                     "}"
                 ]
             }
