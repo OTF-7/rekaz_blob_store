@@ -78,7 +78,7 @@ class StorageManager
      */
     public function getBestAvailableDriver(): StorageDriverInterface
     {
-        $configuredBackend = env('STORAGE_BACKEND', 'database');
+        $configuredBackend = config('storage_backends.default', 'database');
 
         // Try to use the configured backend first
         if (isset($this->drivers[$configuredBackend])) {
@@ -198,7 +198,7 @@ class StorageManager
      */
     public function getCurrentBackend(): string
     {
-        return strtolower(env('STORAGE_BACKEND', $this->defaultBackend));
+        return strtolower(config('storage_backends.default', $this->defaultBackend));
     }
 
     /**

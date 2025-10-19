@@ -21,7 +21,7 @@ return [
     |
     */
 
-    'default' => env('STORAGE_DEFAULT_BACKEND', 'database'),
+    'default' => env('STORAGE_BACKEND', 'database'),
 
     /*
     |--------------------------------------------------------------------------
