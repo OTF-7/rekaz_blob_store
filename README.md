@@ -6,6 +6,50 @@
 
 This is a RESTful API that provides unified blob storage across multiple backends: Database, Local File System, S3-compatible storage, and FTP. The system uses Bearer token authentication and supports Base64-encoded binary data.
 
+## Requirements
+
+Before installing this project, ensure you have the following:
+
+### System Requirements
+- **PHP 8.1+** with the following extensions:
+  - `pdo_sqlite` (for SQLite database support)
+  - `sqlite3` (SQLite extension)
+  - `curl` (for HTTP requests)
+  - `json` (JSON processing)
+  - `mbstring` (multibyte string support)
+- **Composer** (PHP dependency manager)
+- **Web server** (Apache, Nginx, or PHP built-in server)
+
+### Optional Requirements (for specific storage backends)
+- **S3-compatible storage** credentials (AWS S3, MinIO, etc.)
+- **FTP server** access (for FTP storage backend)
+- **MySQL/PostgreSQL** (if not using SQLite)
+
+### Verify PHP Extensions
+Check if required extensions are installed:
+```bash
+php -m | grep -E "(pdo_sqlite|sqlite3|curl|json|mbstring)"
+```
+
+If any extensions are missing, install them:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install php-sqlite3 php-curl php-json php-mbstring
+```
+
+**CentOS/RHEL:**
+```bash
+sudo yum install php-pdo php-sqlite3 php-curl php-json php-mbstring
+```
+
+**macOS (Homebrew):**
+```bash
+brew install php
+# Extensions are usually included by default
+```
+
 ## Key Features
 
 - **Multiple Storage Backends**: Database, Local, S3-compatible (HTTP-only), FTP
