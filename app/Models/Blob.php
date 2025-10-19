@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * Blob Model - Represents blob metadata in the system
  * 
  * @property string $id Custom string identifier (primary key)
- * @property string|null $original_filename Original filename of the blob
  * @property int $size_bytes Size of the blob in bytes
  * @property string|null $mime_type MIME type of the blob
  * @property string $storage_backend Storage backend used (s3, database, local, ftp)
@@ -41,7 +40,6 @@ class Blob extends Model
      */
     protected $fillable = [
         'id',
-        'original_filename',
         'size_bytes',
         'mime_type',
         'storage_backend',

@@ -105,7 +105,6 @@ class BlobService
             // Create blob metadata record first
             $blob = Blob::create([
                 'id' => $blobId,
-                'original_filename' => $originalFilename,
                 'size_bytes' => $sizeBytes,
                 'mime_type' => $mimeType,
                 'storage_backend' => $actualBackendType,

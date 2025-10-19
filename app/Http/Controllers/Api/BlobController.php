@@ -229,7 +229,6 @@ class BlobController extends Controller
                 'message' => 'Blob stored successfully',
                 'data' => [
                     'id' => $blob->id,
-                    'original_filename' => $blob->original_filename,
                     'size_bytes' => $blob->size_bytes,
                     'size_formatted' => $blob->formatted_size,
                     'mime_type' => $blob->mime_type,
@@ -257,8 +256,9 @@ class BlobController extends Controller
      * @OA\Get(
      *     path="/v1/blobs/{id}",
      *     summary="Retrieve a blob by ID",
+     *     description="Retrieve blob content or metadata. Use 'metadata_only=1' to get only metadata without content.",
      *     tags={"Blobs"},
-     *     security={{"bearerAuth":{}}},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -266,14 +266,51 @@ class BlobController extends Controller
      *         description="Blob ID",
      *         @OA\Schema(type="string")
      *     ),
+     *     @OA\Parameter(
+     *         name="download",
+     *         in="query",
+     *         required=false,
+     *         description="Set to '1' to download the file directly",
+     *         @OA\Schema(type="string", example="1")
+     *     ),
+     *     @OA\Parameter(
+     *         name="metadata_only",
+     *         in="query",
+     *         required=false,
+     *         description="Set to '1' to get only metadata without content",
+     *         @OA\Schema(type="string", example="1")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Blob retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="id", type="string", example="any_valid_string_or_identifier"),
-     *             @OA\Property(property="data", type="string", example="SGVsbG8gU2ltcGxlIFN0b3JhZ2UgV29ybGQh", description="Base64 encoded binary data"),
-     *             @OA\Property(property="size", type="string", example="27", description="Size in bytes as string"),
-     *             @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-22T21:37:55Z", description="UTC timestamp")
+     *             oneOf={
+     *                 @OA\Schema(
+     *                     description="Full blob data with content",
+     *                     @OA\Property(property="success", type="boolean", example=true),
+     *                     @OA\Property(property="id", type="string", example="any_valid_string_or_identifier"),
+     *                     @OA\Property(property="data", type="string", example="SGVsbG8gU2ltcGxlIFN0b3JhZ2UgV29ybGQh", description="Base64 encoded binary data"),
+     *                     @OA\Property(property="size", type="string", example="27", description="Size in bytes as string"),
+     *                     @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-22T21:37:55Z")
+     *                 ),
+     *                 @OA\Schema(
+     *                     description="Metadata only",
+     *                     @OA\Property(property="success", type="boolean", example=true),
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
+     *
+     *                         @OA\Property(property="size_bytes", type="integer", example=1024000),
+     *                         @OA\Property(property="size_formatted", type="string", example="1.00 MB"),
+     *                         @OA\Property(property="mime_type", type="string", example="application/pdf"),
+     *                         @OA\Property(property="storage_backend", type="string", example="s3"),
+     *                         @OA\Property(property="checksum_md5", type="string", example="5d41402abc4b2a76b9719d911017c592"),
+     *                         @OA\Property(property="created_at", type="string", format="date-time"),
+     *                         @OA\Property(property="updated_at", type="string", format="date-time")
+     *                     )
+     *                 )
+     *             }
      *         )
      *     ),
      *     @OA\Response(
@@ -289,6 +326,33 @@ class BlobController extends Controller
     public function show(Request $request, string $id)
     {
         try {
+            // Check if only metadata is requested
+            if ($request->has('metadata_only') && $request->get('metadata_only') == '1') {
+                $blob = $this->blobService->getMetadata($id);
+                
+                if (!$blob) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Blob not found',
+                    ], 404);
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $blob->id,
+                        'size_bytes' => $blob->size_bytes,
+                        'size_formatted' => $blob->formatted_size,
+                        'mime_type' => $blob->mime_type,
+                        'storage_backend' => $blob->storage_backend,
+                        'checksum_md5' => $blob->checksum_md5,
+                        'created_at' => $blob->created_at,
+                        'updated_at' => $blob->updated_at,
+                    ],
+                ]);
+            }
+            
+            // Retrieve full blob with content
             $result = $this->blobService->retrieve($id);
             $blob = $result['blob'];
             $content = $result['content'];
@@ -297,12 +361,13 @@ class BlobController extends Controller
             if ($request->has('download') && $request->get('download') == '1') {
                 return response($content)
                     ->header('Content-Type', $blob->mime_type)
-                    ->header('Content-Disposition', 'attachment; filename="' . $blob->original_filename . '"')
+                    ->header('Content-Disposition', 'attachment; filename="blob_' . $blob->id . '"')
                     ->header('Content-Length', $blob->size_bytes);
             }
             
-            // Return JSON response by default
+            // Return JSON response with content by default
             return response()->json([
+                'success' => true,
                 'id' => $blob->id,
                 'data' => base64_encode($content),
                 'size' => (string) $blob->size_bytes,
@@ -323,76 +388,7 @@ class BlobController extends Controller
         }
     }
 
-    /**
-     * @OA\Get(
-     *     path="/v1/blobs/{id}/metadata",
-     *     summary="Get blob metadata",
-     *     description="Retrieve metadata for a blob without downloading the content",
-     *     tags={"Blobs"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="Blob ID",
-     *         @OA\Schema(type="string", example="550e8400-e29b-41d4-a716-446655440000")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Blob metadata",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(
-     *                 property="data",
-     *                 type="object",
-     *                 @OA\Property(property="id", type="string", example="550e8400-e29b-41d4-a716-446655440000"),
-     *                 @OA\Property(property="original_filename", type="string", example="document.pdf"),
-     *                 @OA\Property(property="size_bytes", type="integer", example=1024000),
-     *                 @OA\Property(property="size_formatted", type="string", example="1.00 MB"),
-     *                 @OA\Property(property="mime_type", type="string", example="application/pdf"),
-     *                 @OA\Property(property="storage_backend", type="string", example="s3"),
-     *                 @OA\Property(property="checksum_md5", type="string", example="5d41402abc4b2a76b9719d911017c592"),
-     *                 @OA\Property(property="created_at", type="string", format="date-time"),
-     *                 @OA\Property(property="updated_at", type="string", format="date-time")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Blob not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Blob not found")
-     *         )
-     *     )
-     * )
-     */
-    public function metadata(string $id): JsonResponse
-    {
-        $blob = $this->blobService->getMetadata($id);
 
-        if (!$blob) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Blob not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $blob->id,
-                'original_filename' => $blob->original_filename,
-                'size_bytes' => $blob->size_bytes,
-                'size_formatted' => $blob->formatted_size,
-                'mime_type' => $blob->mime_type,
-                'storage_backend' => $blob->storage_backend,
-                'checksum_md5' => $blob->checksum_md5,
-                'created_at' => $blob->created_at,
-                'updated_at' => $blob->updated_at,
-            ],
-        ]);
-    }
 
     /**
      * @OA\Get(
@@ -474,7 +470,6 @@ class BlobController extends Controller
                     'data' => array_map(function ($blob) {
                         return [
                             'id' => $blob->id,
-                            'original_filename' => $blob->original_filename,
                             'size_bytes' => $blob->size_bytes,
                             'size_formatted' => $blob->formatted_size,
                             'mime_type' => $blob->mime_type,

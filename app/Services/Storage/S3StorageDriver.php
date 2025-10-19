@@ -180,7 +180,18 @@ class S3StorageDriver implements StorageDriverInterface
     public function retrieve(string $storagePath): string
     {
         try {
-            $url = $this->getObjectUrl($storagePath);
+            // If storagePath doesn't contain the prefix, it might be just the blob ID
+            // In that case, we need to construct the proper object key
+            $objectKey = $storagePath;
+            $prefix = $this->config['prefix'] ?? 'blobs';
+            
+            // Check if the storage path already contains the prefix
+            if (!str_starts_with($storagePath, $prefix . '/')) {
+                // If not, treat it as a blob ID and construct the object key
+                $objectKey = $this->getObjectKey($storagePath);
+            }
+            
+            $url = $this->getObjectUrl($objectKey);
             
             $parsedUrl = parse_url($this->config['endpoint']);
             $host = $parsedUrl['host'];
@@ -192,13 +203,13 @@ class S3StorageDriver implements StorageDriverInterface
                 'Host' => $host,
             ];
             
-            $authHeaders = $this->generateSignature('GET', '/' . $this->config['bucket'] . '/' . $storagePath, $headers);
+            $authHeaders = $this->generateSignature('GET', '/' . $this->config['bucket'] . '/' . $objectKey, $headers);
             $headers = array_merge($headers, $authHeaders);
             
             $response = Http::withHeaders($headers)->get($url);
             
             if ($response->status() === 404) {
-                throw new Exception("Blob not found in S3 storage: {$storagePath}", 404);
+                throw new Exception("Blob not found in S3 storage: {$objectKey}", 404);
             }
             
             if (!$response->successful()) {
@@ -220,7 +231,18 @@ class S3StorageDriver implements StorageDriverInterface
     public function delete(string $storagePath): bool
     {
         try {
-            $url = $this->getObjectUrl($storagePath);
+            // If storagePath doesn't contain the prefix, it might be just the blob ID
+            // In that case, we need to construct the proper object key
+            $objectKey = $storagePath;
+            $prefix = $this->config['prefix'] ?? 'blobs';
+            
+            // Check if the storage path already contains the prefix
+            if (!str_starts_with($storagePath, $prefix . '/')) {
+                // If not, treat it as a blob ID and construct the object key
+                $objectKey = $this->getObjectKey($storagePath);
+            }
+            
+            $url = $this->getObjectUrl($objectKey);
             
             $parsedUrl = parse_url($this->config['endpoint']);
             $host = $parsedUrl['host'];
@@ -232,7 +254,7 @@ class S3StorageDriver implements StorageDriverInterface
                 'Host' => $host,
             ];
             
-            $authHeaders = $this->generateSignature('DELETE', '/' . $this->config['bucket'] . '/' . $storagePath, $headers);
+            $authHeaders = $this->generateSignature('DELETE', '/' . $this->config['bucket'] . '/' . $objectKey, $headers);
             $headers = array_merge($headers, $authHeaders);
             
             $response = Http::withHeaders($headers)->delete($url);
@@ -253,7 +275,18 @@ class S3StorageDriver implements StorageDriverInterface
     public function exists(string $storagePath): bool
     {
         try {
-            $url = $this->getObjectUrl($storagePath);
+            // If storagePath doesn't contain the prefix, it might be just the blob ID
+            // In that case, we need to construct the proper object key
+            $objectKey = $storagePath;
+            $prefix = $this->config['prefix'] ?? 'blobs';
+            
+            // Check if the storage path already contains the prefix
+            if (!str_starts_with($storagePath, $prefix . '/')) {
+                // If not, treat it as a blob ID and construct the object key
+                $objectKey = $this->getObjectKey($storagePath);
+            }
+            
+            $url = $this->getObjectUrl($objectKey);
             
             $parsedUrl = parse_url($this->config['endpoint']);
             $host = $parsedUrl['host'];
@@ -265,7 +298,7 @@ class S3StorageDriver implements StorageDriverInterface
                 'Host' => $host,
             ];
             
-            $authHeaders = $this->generateSignature('HEAD', '/' . $this->config['bucket'] . '/' . $storagePath, $headers);
+            $authHeaders = $this->generateSignature('HEAD', '/' . $this->config['bucket'] . '/' . $objectKey, $headers);
             $headers = array_merge($headers, $authHeaders);
             
             $response = Http::withHeaders($headers)->head($url);
@@ -282,7 +315,18 @@ class S3StorageDriver implements StorageDriverInterface
     public function getSize(string $storagePath): int
     {
         try {
-            $url = $this->getObjectUrl($storagePath);
+            // If storagePath doesn't contain the prefix, it might be just the blob ID
+            // In that case, we need to construct the proper object key
+            $objectKey = $storagePath;
+            $prefix = $this->config['prefix'] ?? 'blobs';
+            
+            // Check if the storage path already contains the prefix
+            if (!str_starts_with($storagePath, $prefix . '/')) {
+                // If not, treat it as a blob ID and construct the object key
+                $objectKey = $this->getObjectKey($storagePath);
+            }
+            
+            $url = $this->getObjectUrl($objectKey);
             
             $parsedUrl = parse_url($this->config['endpoint']);
             $host = $parsedUrl['host'];
@@ -294,13 +338,13 @@ class S3StorageDriver implements StorageDriverInterface
                 'Host' => $host,
             ];
             
-            $authHeaders = $this->generateSignature('HEAD', '/' . $this->config['bucket'] . '/' . $storagePath, $headers);
+            $authHeaders = $this->generateSignature('HEAD', '/' . $this->config['bucket'] . '/' . $objectKey, $headers);
             $headers = array_merge($headers, $authHeaders);
             
             $response = Http::withHeaders($headers)->head($url);
             
             if ($response->status() === 404) {
-                throw new Exception("Blob not found in S3 storage: {$storagePath}", 404);
+                throw new Exception("Blob not found in S3 storage: {$objectKey}", 404);
             }
             
             if (!$response->successful()) {

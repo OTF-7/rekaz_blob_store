@@ -291,13 +291,17 @@ class AuthController extends Controller
         }
     }
 
+
+
+
+
     /**
      * @OA\Post(
-     *     path="/api/v1/user/logout",
+     *     path="/api/v1/auth/logout",
      *     summary="User logout",
-     *     description="Revoke the current access token",
+     *     description="Logout the authenticated user and revoke their access token",
      *     tags={"Authentication"},
-     *     security={{"sanctum":{}}},
+     *     security={{"sanctum": {}}},
      *     @OA\Response(
      *         response=200,
      *         description="Logout successful",
@@ -308,7 +312,7 @@ class AuthController extends Controller
      *     ),
      *     @OA\Response(
      *         response=401,
-     *         description="Unauthorized",
+     *         description="Unauthenticated",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="message", type="string", example="Unauthenticated")
@@ -318,19 +322,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $request->user();
-        
-        if (!$user) {
-            return $this->errorResponse('User not authenticated', 401);
-        }
-        
         try {
-            // Revoke the current token
-            $currentToken = $request->user()->currentAccessToken();
-            if ($currentToken) {
-                $currentToken->delete();
+            // Get the current user's token
+            $user = $request->user();
+            
+            if (!$user) {
+                return $this->errorResponse('Unauthenticated', 401);
             }
+
+            // Revoke the current access token
+            $request->user()->currentAccessToken()->delete();
 
             Log::info('User logged out', [
                 'user_id' => $user->id,
@@ -342,62 +343,11 @@ class AuthController extends Controller
             return $this->successResponse(null, 'Logout successful');
         } catch (\Exception $e) {
             Log::error('Logout failed', [
-                'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'ip' => $request->ip(),
             ]);
-            
-            return $this->errorResponse('Logout failed. Please try again.', 500);
-        }
-    }
 
-    /**
-     * @OA\Post(
-     *     path="/api/v1/user/logout-all",
-     *     summary="Logout from all devices",
-     *     description="Revoke all access tokens for the user",
-     *     tags={"Authentication"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Logout from all devices successful",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Logged out from all devices")
-     *         )
-     *     )
-     * )
-     */
-    public function logoutAll(Request $request): JsonResponse
-    {
-        /** @var User $user */
-        $user = $request->user();
-        
-        if (!$user) {
-            return $this->errorResponse('User not authenticated', 401);
-        }
-        
-        try {
-            // Revoke all tokens for the user
-            $tokenCount = $user->tokens()->count();
-            $user->tokens()->delete();
-
-            Log::info('User logged out from all devices', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'tokens_revoked' => $tokenCount,
-                'ip' => $request->ip(),
-                'timestamp' => now(),
-            ]);
-
-            return $this->successResponse(null, 'Logged out from all devices');
-        } catch (\Exception $e) {
-            Log::error('Logout all devices failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'ip' => $request->ip(),
-            ]);
-            
             return $this->errorResponse('Logout failed. Please try again.', 500);
         }
     }

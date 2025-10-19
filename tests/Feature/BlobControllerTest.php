@@ -28,7 +28,7 @@ class BlobControllerTest extends TestCase
      */
     public function test_unauthenticated_access_denied(): void
     {
-        $response = $this->getJson('/v1/blobs');
+        $response = $this->getJson('/api/v1/blobs');
         $response->assertStatus(401);
     }
 
@@ -39,7 +39,7 @@ class BlobControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
         
-        $response = $this->getJson('/v1/blobs');
+        $response = $this->getJson('/api/v1/blobs');
         
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -63,7 +63,7 @@ class BlobControllerTest extends TestCase
         
         $file = UploadedFile::fake()->create('test.txt', 100, 'text/plain');
         
-        $response = $this->postJson('/v1/blobs', [
+        $response = $this->postJson('/api/v1/blobs', [
             'file' => $file,
         ]);
         
@@ -73,7 +73,6 @@ class BlobControllerTest extends TestCase
                      'message',
                      'data' => [
                          'id',
-                         'original_filename',
                          'size_bytes',
                          'mime_type',
                          'storage_backend',
@@ -83,7 +82,6 @@ class BlobControllerTest extends TestCase
                  ]);
         
         $this->assertDatabaseHas('blobs', [
-            'original_filename' => 'test.txt',
             'mime_type' => 'text/plain',
         ]);
     }
@@ -95,7 +93,7 @@ class BlobControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
         
-        $response = $this->postJson('/v1/blobs', [
+        $response = $this->postJson('/api/v1/blobs', [
             'content' => base64_encode('This is test content'),
             'filename' => 'test.txt',
             'mime_type' => 'text/plain',
@@ -107,7 +105,6 @@ class BlobControllerTest extends TestCase
                      'message',
                      'data' => [
                          'id',
-                         'original_filename',
                          'size_bytes',
                          'mime_type',
                          'storage_backend',
@@ -134,12 +131,12 @@ class BlobControllerTest extends TestCase
             $this->user
         );
         
-        $response = $this->getJson("/v1/blobs/{$blob->id}?download=1");
+        $response = $this->getJson("/api/v1/blobs/{$blob->id}?download=1");
         
         $response->assertStatus(200);
         $this->assertStringStartsWith('text/plain', $response->headers->get('Content-Type'));
-        $this->assertEquals(
-            'attachment; filename="test.txt"',
+        $this->assertStringContainsString(
+            'attachment; filename=',
             $response->headers->get('Content-Disposition')
         );
     }
@@ -153,7 +150,6 @@ class BlobControllerTest extends TestCase
         
         $blob = Blob::create([
             'id' => 'test-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -161,14 +157,13 @@ class BlobControllerTest extends TestCase
             'checksum_md5' => md5('test content'),
         ]);
         
-        $response = $this->getJson("/v1/blobs/{$blob->id}/metadata");
+        $response = $this->getJson("/api/v1/blobs/{$blob->id}?metadata_only=1");
         
         $response->assertStatus(200)
                  ->assertJsonStructure([
                      'success',
                      'data' => [
                          'id',
-                         'original_filename',
                          'size_bytes',
                          'mime_type',
                          'storage_backend',
@@ -188,7 +183,6 @@ class BlobControllerTest extends TestCase
         
         $blob = Blob::create([
             'id' => 'test-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -196,7 +190,7 @@ class BlobControllerTest extends TestCase
             'checksum_md5' => md5('test content'),
         ]);
         
-        $response = $this->deleteJson("/v1/blobs/{$blob->id}");
+        $response = $this->deleteJson("/api/v1/blobs/{$blob->id}");
         
         $response->assertStatus(200)
                  ->assertJson([
@@ -214,7 +208,7 @@ class BlobControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
         
-        $response = $this->getJson('/v1/blobs/stats');
+        $response = $this->getJson('/api/v1/blobs/stats');
         
         $response->assertStatus(200)
                  ->assertJsonStructure([
@@ -236,7 +230,7 @@ class BlobControllerTest extends TestCase
         Sanctum::actingAs($this->user);
         
         // Test without file or content - should return custom error message
-        $response = $this->postJson('/v1/blobs', []);
+        $response = $this->postJson('/api/v1/blobs', []);
         $response->assertStatus(422)
                  ->assertJson([
                      'success' => false,
@@ -245,7 +239,7 @@ class BlobControllerTest extends TestCase
         
         // Test with invalid file size (over 100MB limit)
         $file = UploadedFile::fake()->create('test.txt', 102401, 'text/plain'); // Over 100MB
-        $response = $this->postJson('/v1/blobs', ['file' => $file]);
+        $response = $this->postJson('/api/v1/blobs', ['file' => $file]);
         $response->assertStatus(422)
                  ->assertJsonValidationErrors(['file']);
     }
@@ -257,7 +251,7 @@ class BlobControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
         
-        $response = $this->getJson('/v1/blobs/non-existent-id');
+        $response = $this->getJson('/api/v1/blobs/non-existent-id');
         
         $response->assertStatus(404)
                  ->assertJson([
@@ -273,7 +267,7 @@ class BlobControllerTest extends TestCase
     {
         Sanctum::actingAs($this->user);
         
-        $response = $this->deleteJson('/v1/blobs/non-existent-id');
+        $response = $this->deleteJson('/api/v1/blobs/non-existent-id');
         
         $response->assertStatus(404)
                  ->assertJson([

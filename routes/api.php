@@ -28,6 +28,7 @@ Route::get('/health', function () {
 Route::prefix('v1/auth')->group(function () {
     Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
     Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
+    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
 // Protected API routes (require authentication)
@@ -40,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 'data' => $request->user(),
             ]);
         });
-        Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
+
     });
 
     // Blob management routes
@@ -55,13 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/stats', [BlobController::class, 'stats']);
         
         // Retrieve blob content
-        Route::get('/{id}', [BlobController::class, 'show']);
-        
-        // Get blob metadata only
-        Route::get('/{id}/metadata', [BlobController::class, 'metadata']);
+        Route::get('/{id}', [BlobController::class, 'show']); // Retrieve a blob (supports ?metadata_only=1 and ?download=1)
         
         // Delete blob
-        Route::delete('/{id}', [BlobController::class, 'destroy']);
+        Route::delete('/{id}', [BlobController::class, 'destroy']); // Delete a blob
     });
 
     // Storage configuration routes would go here (future implementation)
@@ -77,15 +75,16 @@ Route::fallback(function () {
         'message' => 'API endpoint not found',
         'available_endpoints' => [
             'GET /health' => 'Health check',
+            // Authentication
             'POST /v1/auth/login' => 'User login',
-            'POST /v1/auth/register' => 'User registration',
+            'POST /v1/auth/register' => 'User registration', 
+            'POST /v1/auth/logout' => 'User logout (authenticated)',
             'GET /v1/user/profile' => 'Get user profile (authenticated)',
-            'POST /v1/user/logout' => 'User logout (authenticated)',
+            // Blob Management
             'GET /v1/blobs' => 'List blobs (authenticated)',
             'POST /v1/blobs' => 'Store blob (authenticated)',
             'GET /v1/blobs/stats' => 'Get storage statistics (authenticated)',
             'GET /v1/blobs/{id}' => 'Retrieve blob (authenticated)',
-            'GET /v1/blobs/{id}/metadata' => 'Get blob metadata (authenticated)',
             'DELETE /v1/blobs/{id}' => 'Delete blob (authenticated)',
         ],
     ], 404);

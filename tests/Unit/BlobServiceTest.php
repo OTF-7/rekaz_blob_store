@@ -33,7 +33,7 @@ class BlobServiceTest extends TestCase
         $blob = $this->blobService->store($file);
         
         $this->assertInstanceOf(Blob::class, $blob);
-        $this->assertEquals('test.txt', $blob->original_filename);
+
         $this->assertEquals('text/plain', $blob->mime_type);
         $this->assertEquals('database', $blob->storage_backend);
         $this->assertNotNull($blob->id);
@@ -52,7 +52,7 @@ class BlobServiceTest extends TestCase
         $blob = $this->blobService->store($content, null, $filename, $mimeType);
         
         $this->assertInstanceOf(Blob::class, $blob);
-        $this->assertEquals($filename, $blob->original_filename);
+
         $this->assertEquals($mimeType, $blob->mime_type);
         $this->assertEquals(strlen($content), $blob->size_bytes);
         $this->assertEquals(md5($content), $blob->checksum_md5);
@@ -111,7 +111,7 @@ class BlobServiceTest extends TestCase
         
         $this->assertInstanceOf(Blob::class, $metadata);
         $this->assertEquals($blob->id, $metadata->id);
-        $this->assertEquals($blob->original_filename, $metadata->original_filename);
+
         $this->assertEquals($blob->size_bytes, $metadata->size_bytes);
         $this->assertEquals($blob->mime_type, $metadata->mime_type);
         $this->assertEquals($blob->storage_backend, $metadata->storage_backend);

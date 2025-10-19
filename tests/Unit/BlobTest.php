@@ -18,7 +18,6 @@ class BlobTest extends TestCase
     {
         $blob = Blob::create([
             'id' => 'test-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -28,7 +27,7 @@ class BlobTest extends TestCase
 
         $this->assertInstanceOf(Blob::class, $blob);
         $this->assertEquals('test-blob-id', $blob->id);
-        $this->assertEquals('test.txt', $blob->original_filename);
+
         $this->assertEquals(1024, $blob->size_bytes);
         $this->assertEquals('text/plain', $blob->mime_type);
         $this->assertEquals('database', $blob->storage_backend);
@@ -43,7 +42,6 @@ class BlobTest extends TestCase
     {
         $blob = Blob::create([
             'id' => 'test-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -67,7 +65,6 @@ class BlobTest extends TestCase
     {
         $databaseBlob = Blob::create([
             'id' => 'db-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -77,7 +74,6 @@ class BlobTest extends TestCase
 
         $localBlob = Blob::create([
             'id' => 'local-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'local',
@@ -96,7 +92,6 @@ class BlobTest extends TestCase
     {
         $blob = Blob::create([
             'id' => 'test-blob-id',
-            'original_filename' => 'test.txt',
             'size_bytes' => 1024,
             'mime_type' => 'text/plain',
             'storage_backend' => 'database',
@@ -133,7 +128,6 @@ class BlobTest extends TestCase
         $blob = new Blob();
         $expectedFillable = [
             'id',
-            'original_filename',
             'size_bytes',
             'mime_type',
             'storage_backend',

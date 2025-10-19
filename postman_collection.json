@@ -1,0 +1,804 @@
+{
+    "info": {
+        "_postman_id": "rekaz-simple-drive-collection",
+        "name": "Rekaz Simple Drive API",
+        "description": "Complete API collection for Rekaz Simple Drive - Object Storage System with multiple backends (S3, Database, Local, FTP)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "rekaz-hiring-challenge"
+    },
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Login (Generate API Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    if (responseJson.token) {",
+                                    "        pm.environment.set('api_token', responseJson.token);",
+                                    "        console.log('API Token set successfully');",
+                                    "    }",
+                                    "}",
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has token', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('token');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"omartaha.tech7@gmail.com\",\n    \"password\": \"SecurePass123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login to get API token for authentication"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Register New User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('Response has user data', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('data');",
+                                    "    pm.expect(responseJson.data).to.have.property('user');",
+                                    "    pm.expect(responseJson.data).to.have.property('token');",
+                                    "});",
+                                    "if (pm.response.code === 201) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    if (responseJson.data && responseJson.data.token) {",
+                                    "        pm.environment.set('api_token', responseJson.data.token);",
+                                    "        console.log('Registration successful, API Token set');",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Omar Taha\",\n    \"email\": \"omartaha.tech7@gmail.com\",\n    \"password\": \"SecurePass123!\",\n    \"password_confirmation\": \"SecurePass123!\",\n    \"device_name\": \"My Device\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Register a new user account"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Logout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has success message', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('success');",
+                                    "    pm.expect(responseJson.success).to.be.true;",
+                                    "});",
+                                    "// Clear the token after successful logout",
+                                    "if (pm.response.code === 200) {",
+                                    "    pm.environment.unset('api_token');",
+                                    "    console.log('Logged out successfully, token cleared');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Logout and revoke current API token"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has user profile', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('data');",
+                                    "    pm.expect(responseJson.data).to.have.property('id');",
+                                    "    pm.expect(responseJson.data).to.have.property('name');",
+                                    "    pm.expect(responseJson.data).to.have.property('email');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/user/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "user",
+                                "profile"
+                            ]
+                        },
+                        "description": "Get current user profile information"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Blob Management",
+            "item": [
+                {
+                    "name": "Store Text File",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "const sampleText = 'Hello, this is a sample text file for Rekaz Simple Drive!';",
+                                    "const base64Content = btoa(sampleText);",
+                                    "pm.environment.set('sample_text_base64', base64Content);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('Response has blob data', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('data');",
+                                    "    pm.expect(responseJson.data).to.have.property('id');",
+                                    "});",
+                                    "if (pm.response.code === 201) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.environment.set('stored_blob_id', responseJson.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"sample-text-file-001\",\n    \"data\": \"{{sample_text_base64}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Store Image File",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "const sampleImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';",
+                                    "pm.environment.set('sample_image_base64', sampleImageBase64);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "if (pm.response.code === 201) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.environment.set('stored_image_blob_id', responseJson.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"sample-image-002\",\n    \"data\": \"{{sample_image_base64}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Store JSON File",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "const sampleJson = JSON.stringify({ message: 'Hello from S3', timestamp: new Date().toISOString() }, null, 2);",
+                                    "const base64Content = btoa(sampleJson);",
+                                    "pm.environment.set('sample_json_base64', base64Content);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "if (pm.response.code === 201) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.environment.set('stored_s3_blob_id', responseJson.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"sample-json-003\",\n    \"data\": \"{{sample_json_base64}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Store XML File",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "const sampleXml = '<?xml version=\"1.0\" encoding=\"UTF-8\"?>\\n<data>\\n    <message>FTP Storage Test</message>\\n    <timestamp>' + new Date().toISOString() + '</timestamp>\\n</data>';",
+                                    "const base64Content = btoa(sampleXml);",
+                                    "pm.environment.set('sample_xml_base64', base64Content);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "if (pm.response.code === 201) {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.environment.set('stored_ftp_blob_id', responseJson.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": \"sample-xml-004\",\n    \"data\": \"{{sample_xml_base64}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Blobs",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has data array', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('data');",
+                                    "    pm.expect(responseJson.data).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs"
+                            ]
+                        },
+                        "description": "Get paginated list of all blobs with optional filtering"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Retrieve Blob (Content or Metadata)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has blob data', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('success');",
+                                    "    pm.expect(responseJson.success).to.be.true;",
+                                    "    // Check if it's metadata only or full content",
+                                    "    if (pm.request.url.query.has('metadata_only')) {",
+                                    "        pm.expect(responseJson.data).to.have.property('id');",
+                                    "",
+                                    "    } else {",
+                                    "        pm.expect(responseJson).to.have.property('data');",
+                                    "        pm.expect(responseJson).to.have.property('id');",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs/{{stored_blob_id}}?metadata_only=0&download=0",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs",
+                                "{{stored_blob_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "metadata_only",
+                                    "value": "0",
+                                    "description": "Set to 1 to get only metadata without content"
+                                },
+                                {
+                                    "key": "download",
+                                    "value": "0",
+                                    "description": "Set to 1 to download file directly"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve blob content (default), metadata only (?metadata_only=1), or download file (?download=1)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Storage Statistics",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has statistics', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('success');",
+                                    "    pm.expect(responseJson.data).to.have.property('total_blobs');",
+                                    "    pm.expect(responseJson.data).to.have.property('total_size_bytes');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs/stats",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs",
+                                "stats"
+                            ]
+                        },
+                        "description": "Get storage usage statistics including total blobs and size"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Blob",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response confirms deletion', function () {",
+                                    "    const responseJson = pm.response.json();",
+                                    "    pm.expect(responseJson).to.have.property('success');",
+                                    "    pm.expect(responseJson.success).to.be.true;",
+                                    "    pm.expect(responseJson).to.have.property('message');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{api_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/blobs/{{stored_blob_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "blobs",
+                                "{{stored_blob_id}}"
+                            ]
+                        },
+                        "description": "Delete a blob by ID from storage"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "if (!pm.environment.get('base_url')) {",
+                    "pm.environment.set('base_url', 'http://rekaz.test');",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://rekaz.test",
+            "type": "string"
+        },
+        {
+            "key": "api_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "stored_blob_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "stored_image_blob_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "stored_s3_blob_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "stored_ftp_blob_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

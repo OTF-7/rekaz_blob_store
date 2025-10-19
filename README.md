@@ -63,9 +63,8 @@ brew install php
 ## Architecture
 
 ### Controllers (`app/Http/Controllers/`)
-- `AuthController`: Handles user registration/login
-- `BlobController`: Manages blob storage/retrieval operations
-- `UserController`: User profile management
+- `AuthController`: Handles user registration/login/logout and user profile
+- `BlobController`: Manages blob storage/retrieval operations and statistics
 
 ### Storage System (`app/Services/Storage/`)
 - `StorageManager`: Coordinates storage operations
@@ -98,9 +97,17 @@ POST /v1/auth/login
   "email": "john@example.com",
   "password": "SecurePass123!"
 }
+
+# Logout
+POST /v1/auth/logout
+Authorization: Bearer {token}
+
+# Get User Profile
+GET /v1/user/profile
+Authorization: Bearer {token}
 ```
 
-### Blob Operations
+### Blob Management
 ```bash
 # Store blob
 POST /v1/blobs
@@ -110,12 +117,28 @@ Authorization: Bearer {token}
   "data": "SGVsbG8gV29ybGQh"  // Base64 encoded
 }
 
-# Retrieve blob
+# List blobs (with pagination and filtering)
+GET /v1/blobs?page=1&per_page=20&mime_type=image/
+Authorization: Bearer {token}
+
+# Retrieve blob content
 GET /v1/blobs/{id}
 Authorization: Bearer {token}
 
-# List blobs
-GET /v1/blobs
+# Retrieve blob metadata only
+GET /v1/blobs/{id}?metadata_only=1
+Authorization: Bearer {token}
+
+# Download blob as attachment
+GET /v1/blobs/{id}?download=1
+Authorization: Bearer {token}
+
+# Get storage statistics
+GET /v1/blobs/stats
+Authorization: Bearer {token}
+
+# Delete blob
+DELETE /v1/blobs/{id}
 Authorization: Bearer {token}
 ```
 
