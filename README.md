@@ -183,6 +183,57 @@ If you encounter the error `Database file at path does not exist` during deploym
 
 **Note**: Relative paths in `DB_DATABASE` may not work correctly on all server environments. Always use absolute paths for production deployments.
 
+### SQLite Driver Missing Error
+
+If you encounter the error `could not find driver (Connection: sqlite, SQL: PRAGMA foreign_keys = ON;)`:
+
+**Problem**: The PHP SQLite extension is not installed or enabled on your server.
+
+**Solution - Install php-sqlite3 extension**:
+
+**Ubuntu/Debian**:
+```bash
+sudo apt update
+sudo apt install php-sqlite3
+sudo systemctl restart apache2  # or nginx
+```
+
+**CentOS/RHEL/Rocky Linux**:
+```bash
+sudo yum install php-pdo php-sqlite3
+# or for newer versions:
+sudo dnf install php-pdo php-sqlite3
+sudo systemctl restart httpd  # or nginx
+```
+
+**macOS (Homebrew)**:
+```bash
+brew install php
+# SQLite support is usually included by default
+```
+
+**Windows (XAMPP/WAMP)**:
+- Uncomment `;extension=pdo_sqlite` in `php.ini`
+- Uncomment `;extension=sqlite3` in `php.ini`
+- Restart Apache
+
+**Verify installation**:
+```bash
+php -m | grep sqlite
+# Should show: pdo_sqlite, sqlite3
+```
+
+**Alternative - Use MySQL instead**:
+If SQLite installation is not possible, update your `.env`:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
 ## Project Structure
 ```
 app/
