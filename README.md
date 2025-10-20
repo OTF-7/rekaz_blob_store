@@ -8,7 +8,7 @@
 app/
 ├── Console/
 │   ├── Commands/             # Custom Artisan commands
-│   │   └── StorageDiagnoseCommand.php
+│   │   └── DiagnoseStorage.php     # Storage diagnostics command
 │   └── Kernel.php
 ├── Contracts/
 │   └── StorageDriverInterface.php  # Storage driver contract
@@ -16,16 +16,28 @@ app/
 │   └── Handler.php           # Global exception handling
 ├── Http/
 │   ├── Controllers/
-│   │   ├── AuthController.php      # Authentication endpoints
-│   │   └── BlobController.php      # Blob CRUD operations
+│   │   ├── Api/              # API controllers namespace
+│   │   │   ├── AuthController.php  # Authentication endpoints
+│   │   │   └── BlobController.php  # Blob CRUD operations
+│   │   └── Controller.php    # Base controller
 │   ├── Kernel.php
-│   └── Middleware/
-│       └── ForceJsonResponse.php   # API response middleware
+│   └── Middleware/           # HTTP middleware
+│       ├── Authenticate.php
+│       ├── EncryptCookies.php
+│       ├── RedirectIfAuthenticated.php
+│       ├── TrustHosts.php
+│       ├── TrustProxies.php
+│       ├── ValidateSignature.php
+│       └── VerifyCsrfToken.php
 ├── Models/
 │   ├── Blob.php             # Blob metadata model
 │   ├── BlobStorage.php      # Database storage model
 │   └── User.php             # User authentication model
 ├── Providers/               # Laravel service providers
+│   ├── AppServiceProvider.php
+│   ├── AuthServiceProvider.php
+│   ├── EventServiceProvider.php
+│   └── RouteServiceProvider.php
 └── Services/
     ├── BlobService.php      # Business logic layer
     ├── Storage/
@@ -37,36 +49,46 @@ app/
 
 config/
 ├── storage_backends.php     # Storage backend configuration
+├── l5-swagger.php          # API documentation config
 └── [other Laravel configs]
 
 database/
 ├── factories/
 │   └── UserFactory.php      # Test data generation
 ├── migrations/              # Database schema
-│   ├── create_users_table.php
-│   ├── create_blobs_table.php
-│   └── create_blob_data_table.php
+│   ├── 2014_10_12_000000_create_users_table.php
+│   ├── 2014_10_12_100000_create_password_reset_tokens_table.php
+│   ├── 2019_08_19_000000_create_failed_jobs_table.php
+│   ├── 2019_12_14_000001_create_personal_access_tokens_table.php
+│   ├── 2025_10_18_204558_create_blobs_table.php
+│   ├── 2025_10_18_204605_create_blob_storage_table.php
+│   ├── 2025_10_19_022654_drop_storage_configuration_tables.php
+│   ├── 2025_10_19_023100_create_blob_data_table.php
+│   ├── 2025_10_19_093234_drop_duplicate_blob_storage_table.php
+│   └── 2025_10_19_164134_drop_original_filename_from_blobs_table.php
 └── seeders/
     ├── AdminUserSeeder.php  # Default admin user
-    └── DatabaseSeeder.php
+    └── DatabaseSeeder.php   # Main seeder
 
 routes/
-├── api.php                  # API endpoint definitions
-└── [other Laravel routes]
-
-storage/
-├── api-docs/
-│   └── api-docs.json        # Swagger documentation
-└── app/                     # Local file storage
+├── api.php                 # API routes
+├── console.php             # Artisan commands
+└── web.php                 # Web routes (redirects to API docs)
 
 tests/
-├── Feature/
-│   ├── BlobControllerTest.php      # API integration tests
+├── Feature/                # Integration tests
+│   ├── BlobControllerTest.php
 │   └── ExampleTest.php
-└── Unit/
-    ├── BlobServiceTest.php         # Service layer tests
-    ├── BlobTest.php               # Model tests
+└── Unit/                   # Unit tests
+    ├── BlobServiceTest.php
+    ├── BlobTest.php
     └── ExampleTest.php
+
+storage/
+├── api-docs/               # Generated API documentation
+│   └── api-docs.json
+├── app/                    # Application storage
+└── logs/                   # Application logs
 
 postman_collection.json      # Postman API collection
 phpunit.xml                  # Testing configuration
@@ -132,7 +154,7 @@ brew install php
 
 ## Architecture
 
-### Controllers (`app/Http/Controllers/`)
+### Controllers (`app/Http/Controllers/Api/`)
 - `AuthController`: Handles user registration/login/logout and user profile
 - `BlobController`: Manages blob storage/retrieval operations and statistics
 
