@@ -48,24 +48,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('v1/blobs')->group(function () {
         // List blobs with pagination and filtering
         Route::get('/', [BlobController::class, 'index']);
-        
+
         // Store new blob
         Route::post('/', [BlobController::class, 'store']);
-        
+
         // Get storage statistics
         Route::get('/stats', [BlobController::class, 'stats']);
-        
+
         // Retrieve blob content
         Route::get('/{id}', [BlobController::class, 'show']); // Retrieve a blob (supports ?metadata_only=1 and ?download=1)
-        
+
         // Delete blob
         Route::delete('/{id}', [BlobController::class, 'destroy']); // Delete a blob
     });
 
-    // Storage configuration routes would go here (future implementation)
-    // Route::middleware('can:manage-storage')->prefix('v1/storage')->group(function () {
-    //     // Storage configuration endpoints
-    // });
 });
 
 // Fallback route for undefined API endpoints
@@ -77,7 +73,7 @@ Route::fallback(function () {
             'GET /health' => 'Health check',
             // Authentication
             'POST /v1/auth/login' => 'User login',
-            'POST /v1/auth/register' => 'User registration', 
+            'POST /v1/auth/register' => 'User registration',
             'POST /v1/auth/logout' => 'User logout (authenticated)',
             'GET /v1/user/profile' => 'Get user profile (authenticated)',
             // Blob Management

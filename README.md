@@ -2,6 +2,76 @@
 
 > A Laravel-based object storage system with multiple backend support
 
+## Project Structure
+
+```
+app/
+├── Console/
+│   ├── Commands/             # Custom Artisan commands
+│   │   └── StorageDiagnoseCommand.php
+│   └── Kernel.php
+├── Contracts/
+│   └── StorageDriverInterface.php  # Storage driver contract
+├── Exceptions/
+│   └── Handler.php           # Global exception handling
+├── Http/
+│   ├── Controllers/
+│   │   ├── AuthController.php      # Authentication endpoints
+│   │   └── BlobController.php      # Blob CRUD operations
+│   ├── Kernel.php
+│   └── Middleware/
+│       └── ForceJsonResponse.php   # API response middleware
+├── Models/
+│   ├── Blob.php             # Blob metadata model
+│   ├── BlobStorage.php      # Database storage model
+│   └── User.php             # User authentication model
+├── Providers/               # Laravel service providers
+└── Services/
+    ├── BlobService.php      # Business logic layer
+    ├── Storage/
+    │   ├── DatabaseStorageDriver.php  # Database backend
+    │   ├── FtpStorageDriver.php       # FTP backend
+    │   ├── LocalStorageDriver.php     # Local file backend
+    │   └── S3StorageDriver.php        # S3 HTTP-only backend
+    └── StorageManager.php   # Storage coordination
+
+config/
+├── storage_backends.php     # Storage backend configuration
+└── [other Laravel configs]
+
+database/
+├── factories/
+│   └── UserFactory.php      # Test data generation
+├── migrations/              # Database schema
+│   ├── create_users_table.php
+│   ├── create_blobs_table.php
+│   └── create_blob_data_table.php
+└── seeders/
+    ├── AdminUserSeeder.php  # Default admin user
+    └── DatabaseSeeder.php
+
+routes/
+├── api.php                  # API endpoint definitions
+└── [other Laravel routes]
+
+storage/
+├── api-docs/
+│   └── api-docs.json        # Swagger documentation
+└── app/                     # Local file storage
+
+tests/
+├── Feature/
+│   ├── BlobControllerTest.php      # API integration tests
+│   └── ExampleTest.php
+└── Unit/
+    ├── BlobServiceTest.php         # Service layer tests
+    ├── BlobTest.php               # Model tests
+    └── ExampleTest.php
+
+postman_collection.json      # Postman API collection
+phpunit.xml                  # Testing configuration
+```
+
 ## Overview
 
 This is a RESTful API that provides unified blob storage across multiple backends: Database, Local File System, S3-compatible storage, and FTP. The system uses Bearer token authentication and supports Base64-encoded binary data.
@@ -153,11 +223,11 @@ STORAGE_BACKEND=database
 ### S3 Configuration
 ```env
 STORAGE_BACKEND=s3
-AWS_ACCESS_KEY_ID=your_key
-AWS_SECRET_ACCESS_KEY=your_secret
-AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=your-bucket
-AWS_ENDPOINT=https://s3.amazonaws.com
+S3_ACCESS_KEY=your_key
+S3_SECRET_KEY=your_secret
+S3_REGION=us-east-1
+S3_BUCKET=your-bucket
+S3_ENDPOINT=https://s3.amazonaws.com
 ```
 
 ### FTP Configuration
@@ -363,6 +433,26 @@ php artisan storage:diagnose
 
 ## Troubleshooting
 
+### FTP Storage Backend Issues
+
+If the FTP storage backend doesn't work properly, especially after configuration caching:
+
+**Problem**: FTP backend works without cache but fails when configuration is cached (`php artisan config:cache`).
+
+**Solution**:
+```bash
+# Clear configuration cache and don't rebuild it
+php artisan config:clear
+
+# Verify FTP works without cache
+php artisan storage:diagnose --backend=ftp
+
+# Keep configuration uncached for FTP backend
+# Do NOT run: php artisan config:cache
+```
+
+**Note**: This is a known issue with Laravel's config caching and FTP environment variables. The FTP backend works correctly without configuration caching. Other backends (S3, database, local) work fine with caching enabled.
+
 ### SQLite Database Path Error
 
 If you encounter the error `Database file at path does not exist` during deployment or migration:
@@ -445,23 +535,4 @@ DB_PORT=3306
 DB_DATABASE=your_database
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
-```
-
-## Project Structure
-```
-app/
-├── Http/Controllers/     # Request handlers
-├── Models/              # Database models (User, Blob, BlobStorage)
-├── Services/Storage/    # Storage backend implementations
-└── Exceptions/          # Custom error handling
-
-database/
-├── migrations/          # Database schema
-└── factories/           # Test data generation
-
-tests/
-├── Feature/            # End-to-end API tests
-└── Unit/               # Component tests
-
-routes/api.php          # API endpoint definitions
 ```
