@@ -8,7 +8,11 @@
 
 ```bash
 git checkout docker-version
-docker-compose up -d
+
+# Start the application (use one of these commands):
+docker-compose up -d    # For older Docker installations
+# OR
+docker compose up -d    # For newer Docker installations (Docker v2.0+)
 ```
 
 This provides a complete development environment with nginx, PHP-FPM, MySQL, and all dependencies pre-configured. See the `docker-version` branch for detailed Docker setup instructions.
