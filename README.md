@@ -112,7 +112,11 @@ The easiest way to run this project is using Docker. You only need:
 # Clone and start the application
 git clone <repository-url>
 cd rekaz
-docker-compose up -d
+
+# Start the application (use one of these commands):
+docker-compose up -d    # For older Docker installations
+# OR
+docker compose up -d    # For newer Docker installations (Docker v2.0+)
 ```
 
 **Access the application:**
