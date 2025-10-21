@@ -7,7 +7,6 @@ use App\Services\BlobService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,18 +27,19 @@ class BlobController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/v1/blobs",
+     *     path="/api/v1/blobs",
      *     summary="Store a new blob",
-     *     description="Store a blob of data using a unique identifier and Base64 encoded content",
+     *     description="Store a new blob using one of two methods: 1) JSON format with Base64 encoded data (application/json), or 2) File upload with multipart form data (multipart/form-data). Switch between content types in the request body section below.",
      *     tags={"Blobs"},
-     *     security={{"bearerAuth":{}}},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
-     *         description="JSON object containing blob ID and Base64 encoded data",
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
+     *                 type="object",
      *                 required={"id", "data"},
+     *                 description="Method 1: JSON format - Send blob data as Base64 encoded string",
      *                 @OA\Property(
      *                     property="id",
      *                     type="string",
@@ -55,6 +55,25 @@ class BlobController extends Controller
      *                     pattern="^[A-Za-z0-9+\/]*={0,2}$"
      *                 )
      *             )
+     *         ),
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 type="object",
+     *                 description="Method 2: File upload - Upload binary files directly",
+     *                 @OA\Property(
+     *                     property="file",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="File to upload"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="storage_backend",
+     *                     type="string",
+     *                     description="Optional storage backend (database, local, s3, ftp)",
+     *                     example="local"
+     *                 )
+     *             )
      *         )
      *     ),
      *     @OA\Response(
@@ -68,9 +87,12 @@ class BlobController extends Controller
      *                 type="object",
      *                 @OA\Property(property="id", type="string", example="any_valid_string_or_identifier"),
      *                 @OA\Property(property="size_bytes", type="integer", example=27),
+     *                 @OA\Property(property="size_formatted", type="string", example="27 B"),
      *                 @OA\Property(property="mime_type", type="string", example="application/octet-stream"),
      *                 @OA\Property(property="storage_backend", type="string", example="local"),
-     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-22T21:37:55Z")
+     *                 @OA\Property(property="checksum_md5", type="string", example="5d41402abc4b2a76b9719d911017c592"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2023-01-22T21:37:55Z"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time", example="2023-01-22T21:37:55Z")
      *             )
      *         )
      *     ),
@@ -254,31 +276,31 @@ class BlobController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/v1/blobs/{id}",
-     *     summary="Retrieve a blob by ID",
-     *     description="Retrieve blob content or metadata. Use 'metadata_only=1' to get only metadata without content.",
+     *     path="/api/v1/blobs/{id}",
+     *     summary="Retrieve a blob",
+     *     description="Retrieve blob content or metadata by ID",
      *     tags={"Blobs"},
-     *     security={{"sanctum":{}}},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Blob ID",
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="download",
-     *         in="query",
-     *         required=false,
-     *         description="Set to '1' to download the file directly",
-     *         @OA\Schema(type="string", example="1")
+     *         @OA\Schema(type="string", example="blob_12345")
      *     ),
      *     @OA\Parameter(
      *         name="metadata_only",
      *         in="query",
      *         required=false,
-     *         description="Set to '1' to get only metadata without content",
-     *         @OA\Schema(type="string", example="1")
+     *         description="Return only metadata without content",
+     *         @OA\Schema(type="boolean", example=false)
+     *     ),
+     *     @OA\Parameter(
+     *         name="download",
+     *         in="query",
+     *         required=false,
+     *         description="Download as file attachment",
+     *         @OA\Schema(type="boolean", example=false)
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -392,11 +414,11 @@ class BlobController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/v1/blobs",
+     *     path="/api/v1/blobs",
      *     summary="List blobs",
-     *     description="Get a paginated list of blobs",
+     *     description="Get a paginated list of blobs with optional filtering",
      *     tags={"Blobs"},
-     *     security={{"sanctum":{}}},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
@@ -409,34 +431,53 @@ class BlobController extends Controller
      *         in="query",
      *         required=false,
      *         description="Items per page (max 100)",
-     *         @OA\Schema(type="integer", example=20)
+     *         @OA\Schema(type="integer", example=15)
      *     ),
      *     @OA\Parameter(
      *         name="mime_type",
      *         in="query",
      *         required=false,
-     *         description="Filter by MIME type prefix",
-     *         @OA\Schema(type="string", example="image/")
+     *         description="Filter by MIME type",
+     *         @OA\Schema(type="string", example="image/jpeg")
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="List of blobs",
+     *         description="Blobs retrieved successfully",
      *         @OA\JsonContent(
+     *             type="object",
      *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Blobs retrieved successfully"),
      *             @OA\Property(
      *                 property="data",
-     *                 type="array",
-     *                 @OA\Items(type="object")
-     *             ),
-     *             @OA\Property(
-     *                 property="pagination",
      *                 type="object",
+     *                 @OA\Property(
+     *                     property="data",
+     *                     type="array",
+     *                     @OA\Items(
+     *                         type="object",
+     *                         @OA\Property(property="id", type="string", example="blob_12345"),
+     *                         @OA\Property(property="size_bytes", type="integer", example=1024),
+     *                         @OA\Property(property="mime_type", type="string", example="text/plain"),
+     *                         @OA\Property(property="storage_backend", type="string", example="local"),
+     *                         @OA\Property(property="checksum_md5", type="string", example="5d41402abc4b2a76b9719d911017c592"),
+     *                         @OA\Property(property="formatted_size", type="string", example="1.0 KB"),
+     *                         @OA\Property(property="created_at", type="string", format="date-time")
+     *                     )
+     *                 ),
      *                 @OA\Property(property="current_page", type="integer", example=1),
-     *                 @OA\Property(property="per_page", type="integer", example=20),
-     *                 @OA\Property(property="total", type="integer", example=100),
      *                 @OA\Property(property="last_page", type="integer", example=5),
-     *                 @OA\Property(property="has_more", type="boolean", example=true)
+     *                 @OA\Property(property="per_page", type="integer", example=15),
+     *                 @OA\Property(property="total", type="integer", example=75)
      *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Failed to retrieve blobs")
      *         )
      *     )
      * )
@@ -499,22 +540,23 @@ class BlobController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/v1/blobs/{id}",
+     *     path="/api/v1/blobs/{id}",
      *     summary="Delete a blob",
-     *     description="Delete a blob and its associated data",
+     *     description="Delete a blob by ID",
      *     tags={"Blobs"},
-     *     security={{"sanctum":{}}},
+     *     security={{"sanctum": {}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         description="Blob ID",
-     *         @OA\Schema(type="string", example="550e8400-e29b-41d4-a716-446655440000")
+     *         @OA\Schema(type="string", example="blob_12345")
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Blob deleted successfully",
      *         @OA\JsonContent(
+     *             type="object",
      *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="message", type="string", example="Blob deleted successfully")
      *         )
@@ -523,8 +565,18 @@ class BlobController extends Controller
      *         response=404,
      *         description="Blob not found",
      *         @OA\JsonContent(
+     *             type="object",
      *             @OA\Property(property="success", type="boolean", example=false),
      *             @OA\Property(property="message", type="string", example="Blob not found")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Failed to delete blob")
      *         )
      *     )
      * )
@@ -561,31 +613,52 @@ class BlobController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/v1/blobs/stats",
+     *     path="/api/v1/blobs/stats",
      *     summary="Get storage statistics",
      *     description="Get storage usage statistics",
      *     tags={"Blobs"},
-     *     security={{"sanctum":{}}},
+     *     security={{"sanctum": {}}},
      *     @OA\Response(
      *         response=200,
-     *         description="Storage statistics",
+     *         description="Statistics retrieved successfully",
      *         @OA\JsonContent(
+     *             type="object",
      *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Statistics retrieved successfully"),
      *             @OA\Property(
      *                 property="data",
      *                 type="object",
      *                 @OA\Property(property="total_blobs", type="integer", example=150),
-     *                 @OA\Property(property="total_size_bytes", type="integer", example=1073741824),
-     *                 @OA\Property(property="total_size_formatted", type="string", example="1.00 GB"),
+     *                 @OA\Property(property="total_size_bytes", type="integer", example=1048576),
+     *                 @OA\Property(property="total_size_formatted", type="string", example="1.0 MB"),
      *                 @OA\Property(
      *                     property="by_backend",
      *                     type="object",
-     *                     additionalProperties={
-     *                         @OA\Property(property="blob_count", type="integer"),
-     *                         @OA\Property(property="total_size", type="integer")
-     *                     }
+     *                     @OA\Property(
+     *                         property="local",
+     *                         type="object",
+     *                         @OA\Property(property="count", type="integer", example=100),
+     *                         @OA\Property(property="size_bytes", type="integer", example=524288),
+     *                         @OA\Property(property="size_formatted", type="string", example="512.0 KB")
+     *                     ),
+     *                     @OA\Property(
+     *                         property="database",
+     *                         type="object",
+     *                         @OA\Property(property="count", type="integer", example=50),
+     *                         @OA\Property(property="size_bytes", type="integer", example=524288),
+     *                         @OA\Property(property="size_formatted", type="string", example="512.0 KB")
+     *                     )
      *                 )
      *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Failed to retrieve statistics")
      *         )
      *     )
      * )

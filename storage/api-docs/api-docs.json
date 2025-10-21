@@ -350,14 +350,14 @@
                 ]
             }
         },
-        "/v1/blobs": {
+        "/api/v1/blobs": {
             "get": {
                 "tags": [
                     "Blobs"
                 ],
                 "summary": "List blobs",
-                "description": "Get a paginated list of blobs",
-                "operationId": "a4e6cc205d35713484cc273e7ff8fa15",
+                "description": "Get a paginated list of blobs with optional filtering",
+                "operationId": "51e839d7547f7507daa5677efd473994",
                 "parameters": [
                     {
                         "name": "page",
@@ -376,23 +376,23 @@
                         "required": false,
                         "schema": {
                             "type": "integer",
-                            "example": 20
+                            "example": 15
                         }
                     },
                     {
                         "name": "mime_type",
                         "in": "query",
-                        "description": "Filter by MIME type prefix",
+                        "description": "Filter by MIME type",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "image/"
+                            "example": "image/jpeg"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of blobs",
+                        "description": "Blobs retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -401,36 +401,86 @@
                                             "type": "boolean",
                                             "example": true
                                         },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Blobs retrieved successfully"
                                         },
-                                        "pagination": {
+                                        "data": {
                                             "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "example": "blob_12345"
+                                                            },
+                                                            "size_bytes": {
+                                                                "type": "integer",
+                                                                "example": 1024
+                                                            },
+                                                            "mime_type": {
+                                                                "type": "string",
+                                                                "example": "text/plain"
+                                                            },
+                                                            "storage_backend": {
+                                                                "type": "string",
+                                                                "example": "local"
+                                                            },
+                                                            "checksum_md5": {
+                                                                "type": "string",
+                                                                "example": "5d41402abc4b2a76b9719d911017c592"
+                                                            },
+                                                            "formatted_size": {
+                                                                "type": "string",
+                                                                "example": "1.0 KB"
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
                                                 "current_page": {
                                                     "type": "integer",
                                                     "example": 1
-                                                },
-                                                "per_page": {
-                                                    "type": "integer",
-                                                    "example": 20
-                                                },
-                                                "total": {
-                                                    "type": "integer",
-                                                    "example": 100
                                                 },
                                                 "last_page": {
                                                     "type": "integer",
                                                     "example": 5
                                                 },
-                                                "has_more": {
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 75
                                                 }
                                             },
                                             "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve blobs"
                                         }
                                     },
                                     "type": "object"
@@ -450,14 +500,14 @@
                     "Blobs"
                 ],
                 "summary": "Store a new blob",
-                "description": "Store a blob of data using a unique identifier and Base64 encoded content",
-                "operationId": "a090f6c3d5e883aa8e3b90116b9c0df8",
+                "description": "Store a new blob using one of two methods: 1) JSON format with Base64 encoded data (application/json), or 2) File upload with multipart form data (multipart/form-data). Switch between content types in the request body section below.",
+                "operationId": "a03f1e31387081b7762ba4f992dce3fb",
                 "requestBody": {
-                    "description": "JSON object containing blob ID and Base64 encoded data",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
+                                "description": "Method 1: JSON format - Send blob data as Base64 encoded string",
                                 "required": [
                                     "id",
                                     "data"
@@ -474,6 +524,24 @@
                                         "type": "string",
                                         "pattern": "^[A-Za-z0-9+\\/]*={0,2}$",
                                         "example": "SGVsbG8gU2ltcGxlIFN0b3JhZ2UgV29ybGQh"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "description": "Method 2: File upload - Upload binary files directly",
+                                "properties": {
+                                    "file": {
+                                        "description": "File to upload",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "storage_backend": {
+                                        "description": "Optional storage backend (database, local, s3, ftp)",
+                                        "type": "string",
+                                        "example": "local"
                                     }
                                 },
                                 "type": "object"
@@ -506,6 +574,10 @@
                                                     "type": "integer",
                                                     "example": 27
                                                 },
+                                                "size_formatted": {
+                                                    "type": "string",
+                                                    "example": "27 B"
+                                                },
                                                 "mime_type": {
                                                     "type": "string",
                                                     "example": "application/octet-stream"
@@ -514,7 +586,16 @@
                                                     "type": "string",
                                                     "example": "local"
                                                 },
+                                                "checksum_md5": {
+                                                    "type": "string",
+                                                    "example": "5d41402abc4b2a76b9719d911017c592"
+                                                },
                                                 "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2023-01-22T21:37:55Z"
+                                                },
+                                                "updated_at": {
                                                     "type": "string",
                                                     "format": "date-time",
                                                     "example": "2023-01-22T21:37:55Z"
@@ -583,19 +664,19 @@
                 },
                 "security": [
                     {
-                        "bearerAuth": []
+                        "sanctum": []
                     }
                 ]
             }
         },
-        "/v1/blobs/{id}": {
+        "/api/v1/blobs/{id}": {
             "get": {
                 "tags": [
                     "Blobs"
                 ],
-                "summary": "Retrieve a blob by ID",
-                "description": "Retrieve blob content or metadata. Use 'metadata_only=1' to get only metadata without content.",
-                "operationId": "b71bac06a959accfc72f8114aeb6527d",
+                "summary": "Retrieve a blob",
+                "description": "Retrieve blob content or metadata by ID",
+                "operationId": "032b4d61649de854202de5ef3a978997",
                 "parameters": [
                     {
                         "name": "id",
@@ -603,27 +684,28 @@
                         "description": "Blob ID",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "download",
-                        "in": "query",
-                        "description": "Set to '1' to download the file directly",
-                        "required": false,
-                        "schema": {
                             "type": "string",
-                            "example": "1"
+                            "example": "blob_12345"
                         }
                     },
                     {
                         "name": "metadata_only",
                         "in": "query",
-                        "description": "Set to '1' to get only metadata without content",
+                        "description": "Return only metadata without content",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "1"
+                            "type": "boolean",
+                            "example": false
+                        }
+                    },
+                    {
+                        "name": "download",
+                        "in": "query",
+                        "description": "Download as file attachment",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": false
                         }
                     }
                 ],
@@ -747,8 +829,8 @@
                     "Blobs"
                 ],
                 "summary": "Delete a blob",
-                "description": "Delete a blob and its associated data",
-                "operationId": "731147f1ee62b39ec8f88b0ab806e4ef",
+                "description": "Delete a blob by ID",
+                "operationId": "aeffe51871e7fad1dc6420d35a9bfb5f",
                 "parameters": [
                     {
                         "name": "id",
@@ -757,7 +839,7 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                            "example": "blob_12345"
                         }
                     }
                 ],
@@ -801,6 +883,26 @@
                                 }
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to delete blob"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -810,17 +912,17 @@
                 ]
             }
         },
-        "/v1/blobs/stats": {
+        "/api/v1/blobs/stats": {
             "get": {
                 "tags": [
                     "Blobs"
                 ],
                 "summary": "Get storage statistics",
                 "description": "Get storage usage statistics",
-                "operationId": "7d7ce16094f91f1ad69c033958100214",
+                "operationId": "97447067422697f351793907483805dd",
                 "responses": {
                     "200": {
-                        "description": "Storage statistics",
+                        "description": "Statistics retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -828,6 +930,10 @@
                                         "success": {
                                             "type": "boolean",
                                             "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Statistics retrieved successfully"
                                         },
                                         "data": {
                                             "properties": {
@@ -837,27 +943,73 @@
                                                 },
                                                 "total_size_bytes": {
                                                     "type": "integer",
-                                                    "example": 1073741824
+                                                    "example": 1048576
                                                 },
                                                 "total_size_formatted": {
                                                     "type": "string",
-                                                    "example": "1.00 GB"
+                                                    "example": "1.0 MB"
                                                 },
                                                 "by_backend": {
-                                                    "type": "object",
-                                                    "additionalProperties": [
-                                                        {
-                                                            "type": "integer",
-                                                            "property": "blob_count"
+                                                    "properties": {
+                                                        "local": {
+                                                            "properties": {
+                                                                "count": {
+                                                                    "type": "integer",
+                                                                    "example": 100
+                                                                },
+                                                                "size_bytes": {
+                                                                    "type": "integer",
+                                                                    "example": 524288
+                                                                },
+                                                                "size_formatted": {
+                                                                    "type": "string",
+                                                                    "example": "512.0 KB"
+                                                                }
+                                                            },
+                                                            "type": "object"
                                                         },
-                                                        {
-                                                            "type": "integer",
-                                                            "property": "total_size"
+                                                        "database": {
+                                                            "properties": {
+                                                                "count": {
+                                                                    "type": "integer",
+                                                                    "example": 50
+                                                                },
+                                                                "size_bytes": {
+                                                                    "type": "integer",
+                                                                    "example": 524288
+                                                                },
+                                                                "size_formatted": {
+                                                                    "type": "string",
+                                                                    "example": "512.0 KB"
+                                                                }
+                                                            },
+                                                            "type": "object"
                                                         }
-                                                    ]
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve statistics"
                                         }
                                     },
                                     "type": "object"

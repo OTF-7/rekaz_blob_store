@@ -67,21 +67,16 @@ Route::middleware('auth:sanctum')->group(function () {
 // Fallback route for undefined API endpoints
 Route::fallback(function () {
     return response()->json([
-        'success' => false,
-        'message' => 'API endpoint not found',
-        'available_endpoints' => [
-            'GET /health' => 'Health check',
-            // Authentication
-            'POST /v1/auth/login' => 'User login',
-            'POST /v1/auth/register' => 'User registration',
-            'POST /v1/auth/logout' => 'User logout (authenticated)',
-            'GET /v1/user/profile' => 'Get user profile (authenticated)',
-            // Blob Management
-            'GET /v1/blobs' => 'List blobs (authenticated)',
-            'POST /v1/blobs' => 'Store blob (authenticated)',
-            'GET /v1/blobs/stats' => 'Get storage statistics (authenticated)',
-            'GET /v1/blobs/{id}' => 'Retrieve blob (authenticated)',
-            'DELETE /v1/blobs/{id}' => 'Delete blob (authenticated)',
-        ],
+        'message' => 'Route not found. Available endpoints:',
+        'endpoints' => [
+            'POST /api/v1/auth/login - User login',
+            'POST /api/v1/auth/register - User registration',
+            'POST /api/v1/auth/logout - User logout (requires authentication)',
+            'POST /api/v1/blobs - Store a new blob (requires authentication)',
+            'GET /api/v1/blobs/{id} - Retrieve a blob (requires authentication)',
+            'GET /api/v1/blobs - List blobs (requires authentication)',
+            'DELETE /api/v1/blobs/{id} - Delete a blob (requires authentication)',
+            'GET /api/v1/blobs/stats - Get storage statistics (requires authentication)',
+        ]
     ], 404);
 });
