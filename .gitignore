@@ -18,3 +18,10 @@ yarn-error.log
 /.idea
 /.vscode
 /.trae
+
+# Docker
+docker-compose.override.yml
+.env.docker.local
+docker/mysql/data/
+docker/logs/
+*.log

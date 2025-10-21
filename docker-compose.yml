@@ -1,0 +1,76 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rekaz-app
+    restart: unless-stopped
+    ports:
+      - "8083:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/logs:/var/log
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=rekaz
+      - DB_USERNAME=rekaz_user
+      - DB_PASSWORD=rekaz_password
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - rekaz-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: rekaz-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rekaz
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: rekaz_user
+      MYSQL_PASSWORD: rekaz_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - rekaz-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: rekaz-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - rekaz-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: rekaz-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: rekaz_user
+      PMA_PASSWORD: rekaz_password
+      MYSQL_ROOT_PASSWORD: root_password
+    depends_on:
+      - mysql
+    networks:
+      - rekaz-network
+
+volumes:
+  mysql_data:
+
+networks:
+  rekaz-network:
+    driver: bridge

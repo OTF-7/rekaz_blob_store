@@ -187,7 +187,7 @@
         // Configuration object for security
         @php
             $swaggerConfigArray = [
-                'apiUrl' => str_replace('?api-docs.json', '', $urlToDocs ?? ''),
+                'apiUrl' => '/api-docs.json',
                 'operationsSorter' => $operationsSorter ?? null,
                 'configUrl' => $configUrl ?? null,
                 'validatorUrl' => $validatorUrl ?? null,
