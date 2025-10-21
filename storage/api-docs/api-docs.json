@@ -1016,6 +1016,67 @@
                     }
                 ]
             }
+        },
+        "/api/v1/user/profile": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get current user profile",
+                "description": "Returns the authenticated user's profile.",
+                "operationId": "14ef2c4ba2f182ccf6b9481afede13d5",
+                "responses": {
+                    "200": {
+                        "description": "Profile retrieved",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Omar Taha"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "omar@example.com"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -1036,6 +1097,10 @@
         {
             "name": "Blobs",
             "description": "Blob storage and retrieval operations"
+        },
+        {
+            "name": "Users",
+            "description": "User profile operations"
         }
     ]
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BlobController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,12 +36,7 @@ Route::prefix('v1/auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // User profile routes
     Route::prefix('v1/user')->group(function () {
-        Route::get('/profile', function (Request $request) {
-            return response()->json([
-                'success' => true,
-                'data' => $request->user(),
-            ]);
-        });
+        Route::get('/profile', [UserController::class, 'profile']);
 
     });
 
