@@ -4,9 +4,7 @@ namespace App\Services\Storage;
 
 use App\Contracts\StorageDriverInterface;
 use Exception;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 
 /**
  * S3 Compatible Storage Driver
@@ -24,18 +22,20 @@ class S3StorageDriver implements StorageDriverInterface
     }
 
     /**
-     * Load configuration from environment variables.
+     * Load configuration from config file.
      */
     private function loadConfiguration(): void
     {
+        $config = config('storage_backends.backends.s3');
+        
         $this->config = [
-            'endpoint' => env('S3_ENDPOINT'),
-            'bucket' => env('S3_BUCKET'),
-            'access_key' => env('S3_ACCESS_KEY'),
-            'secret_key' => env('S3_SECRET_KEY'),
-            'region' => env('S3_REGION', 'us-east-1'),
-            'use_path_style_endpoint' => env('S3_USE_PATH_STYLE_ENDPOINT', false),
-            'prefix' => 'blobs'
+            'endpoint' => $config['endpoint'] ?? null,
+            'bucket' => $config['bucket'] ?? null,
+            'access_key' => $config['access_key'] ?? null,
+            'secret_key' => $config['secret_key'] ?? null,
+            'region' => $config['region'] ?? 'us-east-1',
+            'use_path_style_endpoint' => $config['use_path_style_endpoint'] ?? false,
+            'prefix' => $config['prefix'] ?? 'blobs',
         ];
     }
 

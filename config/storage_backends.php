@@ -98,6 +98,13 @@ return [
 
     'backends' => [
         's3' => [
+            'endpoint' => env('S3_ENDPOINT'),
+            'bucket' => env('S3_BUCKET'),
+            'access_key' => env('S3_ACCESS_KEY'),
+            'secret_key' => env('S3_SECRET_KEY'),
+            'region' => env('S3_REGION', 'us-east-1'),
+            'use_path_style_endpoint' => env('S3_USE_PATH_STYLE_ENDPOINT', false),
+            'prefix' => env('S3_PREFIX', 'blobs'),
             'required_fields' => [
                 'access_key_id',
                 'secret_access_key',
@@ -121,6 +128,9 @@ return [
         ],
         
         'local' => [
+            'storage_path' => env('LOCAL_STORAGE_PATH') ?: storage_path('app/blobs'),
+            'create_directories' => env('LOCAL_CREATE_DIRECTORIES', true),
+            'permissions' => env('LOCAL_PERMISSIONS', '755'),
             'required_fields' => [
                 'path',
             ],
@@ -136,6 +146,16 @@ return [
         ],
         
         'ftp' => [
+            'host' => env('FTP_HOST'),
+            'username' => env('FTP_USERNAME'),
+            'password' => env('FTP_PASSWORD'),
+            'port' => env('FTP_PORT', 21),
+            'root' => env('FTP_ROOT', '/'),
+            'passive' => env('FTP_PASSIVE', true),
+            'ssl' => env('FTP_SSL', false),
+            'timeout' => env('FTP_TIMEOUT', 30),
+            'utf8' => env('FTP_UTF8', false),
+            'prefix' => env('FTP_PREFIX', 'blobs'),
             'required_fields' => [
                 'host',
                 'username',
@@ -161,6 +181,8 @@ return [
         ],
         
         'database' => [
+            'compression' => env('DATABASE_COMPRESSION', false),
+            'chunk_size' => env('DATABASE_CHUNK_SIZE', 1048576), // 1MB
             'required_fields' => [],
             'optional_fields' => [
                 'compression',

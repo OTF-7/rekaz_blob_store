@@ -8,6 +8,7 @@ use App\Services\Storage\LocalStorageDriver;
 use App\Services\Storage\S3StorageDriver;
 use App\Services\Storage\FtpStorageDriver;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
@@ -19,11 +20,6 @@ use InvalidArgumentException;
 class StorageManager
 {
     /**
-     * Available storage drivers.
-     */
-    private array $drivers = [];
-
-    /**
      * Default storage backend type.
      */
     private string $defaultBackend;
@@ -31,20 +27,6 @@ class StorageManager
     public function __construct()
     {
         $this->defaultBackend = 'database';
-        $this->initializeDrivers();
-    }
-
-    /**
-     * Initialize all available storage drivers.
-     */
-    private function initializeDrivers(): void
-    {
-        $this->drivers = [
-            'database' => new DatabaseStorageDriver(),
-            'local' => new LocalStorageDriver(),
-            's3' => new S3StorageDriver(),
-            'ftp' => new FtpStorageDriver(),
-        ];
     }
 
     /**
@@ -52,17 +34,33 @@ class StorageManager
      */
     public function getDriver(string $backendType): StorageDriverInterface
     {
-        if (!isset($this->drivers[$backendType])) {
-            throw new InvalidArgumentException("Unsupported storage backend: {$backendType}");
-        }
-
-        $driver = $this->drivers[$backendType];
+        // Create a fresh instance to ensure latest configuration is loaded
+        $driver = $this->createDriverInstance($backendType);
 
         if (!$driver->isConfigured()) {
             throw new Exception("Storage driver '{$backendType}' is not properly configured");
         }
 
         return $driver;
+    }
+
+    /**
+     * Create a fresh driver instance.
+     */
+    private function createDriverInstance(string $backendType): StorageDriverInterface
+    {
+        switch ($backendType) {
+            case 'database':
+                return new DatabaseStorageDriver();
+            case 'local':
+                return new LocalStorageDriver();
+            case 's3':
+                return new S3StorageDriver();
+            case 'ftp':
+                return new FtpStorageDriver();
+            default:
+                throw new InvalidArgumentException("Unsupported storage backend: {$backendType}");
+        }
     }
 
     /**
@@ -81,21 +79,21 @@ class StorageManager
         $configuredBackend = config('storage_backends.default', 'database');
 
         // Try to use the configured backend first
-        if (isset($this->drivers[$configuredBackend])) {
-            $driver = $this->drivers[$configuredBackend];
+        try {
+            $driver = $this->createDriverInstance($configuredBackend);
             if ($driver->isConfigured()) {
-                \Log::info("Storage: Using configured backend '{$configuredBackend}'");
+                Log::info("Storage: Using configured backend '{$configuredBackend}'");
                 return $driver;
             } else {
-                \Log::warning("Storage: Configured backend '{$configuredBackend}' is not properly configured, falling back to database");
+                Log::warning("Storage: Configured backend '{$configuredBackend}' is not properly configured, falling back to database");
             }
-        } else {
-            \Log::warning("Storage: Configured backend '{$configuredBackend}' is not available, falling back to database");
+        } catch (InvalidArgumentException $e) {
+            Log::warning("Storage: Configured backend '{$configuredBackend}' is not available, falling back to database");
         }
 
         // Fallback to database driver
-        \Log::info("Storage: Using database backend as fallback");
-        return $this->drivers['database'];
+        Log::info("Storage: Using database backend as fallback");
+        return $this->createDriverInstance('database');
     }
 
     /**
@@ -107,29 +105,29 @@ class StorageManager
 
         try {
             $storagePath = $driver->store($blobId, $data, $mimeType);
-            \Log::info("Storage: Successfully stored blob '{$blobId}' using {$driver->getBackendType()} backend");
+            Log::info("Storage: Successfully stored blob '{$blobId}' using {$driver->getBackendType()} backend");
 
             return [
                 'backend_type' => $driver->getBackendType(),
                 'storage_path' => $storagePath,
             ];
         } catch (Exception $e) {
-            \Log::error("Storage: Failed to store blob '{$blobId}' using {$driver->getBackendType()} backend: {$e->getMessage()}");
+            Log::error("Storage: Failed to store blob '{$blobId}' using {$driver->getBackendType()} backend: {$e->getMessage()}");
 
             // If specified backend fails and it's not the database backend, try database as fallback
             if ($backendType && $backendType !== 'database') {
                 try {
-                    \Log::info("Storage: Attempting fallback to database backend for blob '{$blobId}'");
+                    Log::info("Storage: Attempting fallback to database backend for blob '{$blobId}'");
                     $fallbackDriver = $this->getDriver('database');
                     $storagePath = $fallbackDriver->store($blobId, $data, $mimeType);
-                    \Log::info("Storage: Successfully stored blob '{$blobId}' using database fallback");
+                    Log::info("Storage: Successfully stored blob '{$blobId}' using database fallback");
 
                     return [
                         'backend_type' => $fallbackDriver->getBackendType(),
                         'storage_path' => $storagePath,
                     ];
                 } catch (Exception $fallbackException) {
-                    \Log::error("Storage: Database fallback also failed for blob '{$blobId}': {$fallbackException->getMessage()}");
+                    Log::error("Storage: Database fallback also failed for blob '{$blobId}': {$fallbackException->getMessage()}");
                     // If fallback also fails, throw the original exception
                     throw $e;
                 }
@@ -142,15 +140,15 @@ class StorageManager
     /**
      * Retrieve blob data using the appropriate driver.
      */
-    public function retrieve(string $backendType, string $storagePath, string $blobId = null): string
+    public function retrieve(string $backendType, string $storagePath, ?string $blobId = null): string
     {
         $driver = $this->getDriver($backendType);
-
+    
         // For database storage, we need to pass the blob_id
         if ($backendType === 'database' && $driver instanceof \App\Services\Storage\DatabaseStorageDriver) {
             return $driver->retrieve($storagePath, $blobId);
         }
-
+    
         return $driver->retrieve($storagePath);
     }
 
@@ -190,7 +188,7 @@ class StorageManager
      */
     public function getAvailableBackends(): array
     {
-        return array_keys($this->drivers);
+        return ['database', 'local', 's3', 'ftp'];
     }
 
     /**
@@ -265,9 +263,16 @@ class StorageManager
                 'message' => 'Driver test completed successfully',
             ];
         } catch (Exception $e) {
+            try {
+                $driver = $this->createDriverInstance($backendType);
+                $configured = $driver->isConfigured();
+            } catch (Exception $driverException) {
+                $configured = false;
+            }
+            
             return [
                 'success' => false,
-                'configured' => isset($this->drivers[$backendType]) && $this->drivers[$backendType]->isConfigured(),
+                'configured' => $configured,
                 'error' => $e->getMessage(),
                 'message' => "Driver test failed: {$e->getMessage()}",
             ];

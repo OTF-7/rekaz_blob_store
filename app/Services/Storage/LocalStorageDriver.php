@@ -5,7 +5,6 @@ namespace App\Services\Storage;
 use App\Contracts\StorageDriverInterface;
 use Exception;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 
 /**
  * Local File System Storage Driver
@@ -23,14 +22,16 @@ class LocalStorageDriver implements StorageDriverInterface
     }
 
     /**
-     * Load configuration from environment variables.
+     * Load configuration from config file.
      */
     private function loadConfiguration(): void
     {
+        $config = config('storage_backends.backends.local');
+        
         $this->config = [
-            'storage_path' => env('LOCAL_STORAGE_PATH', storage_path('app/blobs')),
-            'create_directories' => true,
-            'permissions' => '755'
+            'storage_path' => $config['storage_path'] ?? storage_path('app/blobs'),
+            'create_directories' => $config['create_directories'] ?? true,
+            'permissions' => $config['permissions'] ?? '755',
         ];
     }
 

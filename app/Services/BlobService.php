@@ -77,11 +77,20 @@ class BlobService
                 ->first();
 
             if ($existingBlob && $this->verifyBlobIntegrity($existingBlob)) {
-                Log::info('Duplicate blob detected, returning existing blob', [
-                    'existing_id' => $existingBlob->id,
+                // If no preferred backend specified, or it matches the existing blob's backend, return the existing blob (dedupe)
+                if (!$preferredBackend || $preferredBackend === $existingBlob->storage_backend) {
+                    Log::info('Duplicate blob detected, returning existing blob', [
+                        'existing_id' => $existingBlob->id,
+                        'checksum' => $checksumMd5,
+                    ]);
+                    return $existingBlob;
+                }
+                // Otherwise, respect the preferred backend and proceed to store a new blob instance
+                Log::info('Duplicate content detected but preferred backend differs; proceeding to store new blob', [
                     'checksum' => $checksumMd5,
+                    'existing_backend' => $existingBlob->storage_backend,
+                    'preferred_backend' => $preferredBackend,
                 ]);
-                return $existingBlob;
             }
         } else {
             // Check if custom blob ID already exists

@@ -4,6 +4,7 @@ namespace App\Services\Storage;
 
 use App\Contracts\StorageDriverInterface;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Ftp\FtpAdapter;
 use League\Flysystem\Ftp\FtpConnectionOptions;
@@ -30,21 +31,23 @@ class FtpStorageDriver implements StorageDriverInterface
     }
 
     /**
-     * Load configuration from environment variables.
+     * Load configuration from config file.
      */
     private function loadConfiguration(): void
     {
+        $config = config('storage_backends.backends.ftp');
+        
         $this->config = [
-            'host' => env('FTP_HOST'),
-            'username' => env('FTP_USERNAME'),
-            'password' => env('FTP_PASSWORD'),
-            'port' => (int) env('FTP_PORT', 21),
-            'root' => env('FTP_ROOT', '/'),
-            'passive' => (bool) env('FTP_PASSIVE', true),
-            'ssl' => (bool) env('FTP_SSL', false),
-            'timeout' => (int) env('FTP_TIMEOUT', 30),
-            'utf8' => (bool) env('FTP_UTF8', false),
-            'prefix' => 'blobs'
+            'host' => $config['host'] ?? null,
+            'username' => $config['username'] ?? null,
+            'password' => $config['password'] ?? null,
+            'port' => $config['port'] ?? 21,
+            'root' => $config['root'] ?? '/',
+            'passive' => $config['passive'] ?? true,
+            'ssl' => $config['ssl'] ?? false,
+            'timeout' => $config['timeout'] ?? 30,
+            'utf8' => $config['utf8'] ?? false,
+            'prefix' => $config['prefix'] ?? 'blobs',
         ];
     }
 
@@ -68,7 +71,7 @@ class FtpStorageDriver implements StorageDriverInterface
                 'transferMode' => FTP_BINARY,
             ];
             
-            \Log::info("FtpStorageDriver: Connection options - Host: {$connectionOptions['host']}, Port: {$connectionOptions['port']}, SSL: " . ($connectionOptions['ssl'] ? 'true' : 'false') . ", Passive: " . ($connectionOptions['passive'] ? 'true' : 'false'));
+            Log::info("FtpStorageDriver: Connection options - Host: {$connectionOptions['host']}, Port: {$connectionOptions['port']}, SSL: " . ($connectionOptions['ssl'] ? 'true' : 'false') . ", Passive: " . ($connectionOptions['passive'] ? 'true' : 'false'));
             
             $adapter = new FtpAdapter(FtpConnectionOptions::fromArray($connectionOptions));
             
