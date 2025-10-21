@@ -43,10 +43,6 @@
                                         "type": "string",
                                         "format": "password",
                                         "example": "password123"
-                                    },
-                                    "device_name": {
-                                        "type": "string",
-                                        "example": "Web Browser"
                                     }
                                 },
                                 "type": "object"
@@ -197,10 +193,6 @@
                                         "type": "string",
                                         "format": "password",
                                         "example": "password123"
-                                    },
-                                    "device_name": {
-                                        "type": "string",
-                                        "example": "Web Browser"
                                     }
                                 },
                                 "type": "object"
