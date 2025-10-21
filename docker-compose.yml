@@ -6,7 +6,7 @@ services:
     container_name: rekaz-app
     restart: unless-stopped
     ports:
-      - "8083:80"
+      - "8093:80"
     volumes:
       - .:/var/www/html
       - ./docker/logs:/var/log
@@ -38,7 +38,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "3306:3306"
+      - "3316:3306"
     networks:
       - rekaz-network
 
@@ -47,7 +47,7 @@ services:
     container_name: rekaz-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6389:6379"
     networks:
       - rekaz-network
 
@@ -56,7 +56,7 @@ services:
     container_name: rekaz-phpmyadmin
     restart: unless-stopped
     ports:
-      - "8082:80"
+      - "8092:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306

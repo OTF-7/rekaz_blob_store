@@ -100,9 +100,40 @@ This is a RESTful API that provides unified blob storage across multiple backend
 
 ## Requirements
 
-Before installing this project, ensure you have the following:
+### 🐳 Docker Installation (Recommended)
 
-### System Requirements
+The easiest way to run this project is using Docker. You only need:
+
+- **Docker** (version 20.0+)
+- **Docker Compose** (version 2.0+)
+
+**Quick Start with Docker:**
+```bash
+# Clone and start the application
+git clone <repository-url>
+cd rekaz
+docker-compose up -d
+```
+
+**Access the application:**
+- **API**: http://localhost:8093
+- **API Documentation**: http://localhost:8093/docs
+- **phpMyAdmin**: http://localhost:8092
+
+The Docker setup includes:
+- PHP 8.2 with all required extensions
+- Nginx web server
+- MySQL 8.0 database
+- Redis for caching
+- phpMyAdmin for database management
+
+---
+
+### Manual Installation Requirements
+
+If you prefer to install manually without Docker:
+
+#### System Requirements
 - **PHP 8.1+** with the following extensions:
   - `pdo_sqlite` (for SQLite database support)
   - `sqlite3` (SQLite extension)
@@ -112,7 +143,7 @@ Before installing this project, ensure you have the following:
 - **Composer** (PHP dependency manager)
 - **Web server** (Apache, Nginx, or PHP built-in server)
 
-### Optional Requirements (for specific storage backends)
+#### Optional Requirements (for specific storage backends)
 - **S3-compatible storage** credentials (AWS S3, MinIO, etc.)
 - **FTP server** access (for FTP storage backend)
 - **MySQL/PostgreSQL** (if not using SQLite)
