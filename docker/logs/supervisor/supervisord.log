@@ -1,0 +1,8 @@
+2025-10-21 20:51:40,392 INFO Set uid to user 0 succeeded
+2025-10-21 20:51:40,397 INFO supervisord started with pid 1
+2025-10-21 20:51:41,402 INFO spawned: 'php-fpm' with pid 105
+2025-10-21 20:51:41,405 INFO spawned: 'nginx' with pid 106
+2025-10-21 20:51:41,408 INFO spawned: 'laravel-worker_00' with pid 107
+2025-10-21 20:51:42,486 INFO success: php-fpm entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-10-21 20:51:42,487 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-10-21 20:51:42,488 INFO success: laravel-worker_00 entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
