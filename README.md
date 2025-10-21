@@ -2,6 +2,19 @@
 
 > A Laravel-based object storage system with multiple backend support
 
+## 🐳 Easy Docker Installation
+
+**For the easiest setup experience, use the Docker version available in the `docker-version` branch:**
+
+```bash
+git checkout docker-version
+docker-compose up -d
+```
+
+This provides a complete development environment with nginx, PHP-FPM, MySQL, and all dependencies pre-configured. See the `docker-version` branch for detailed Docker setup instructions.
+
+---
+
 ## Project Structure
 
 ```
